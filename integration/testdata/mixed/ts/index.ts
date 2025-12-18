@@ -1,6 +1,8 @@
-// TODO:[#ts-root] typescript root
-// DEPS: #js-root, #go-root
+// TODO: typescript root
+// @todo-id ts-root
+// @todo-deps js-root, go-root
 
 export function main() {
-  // TODO:[#ts-worker]
+  // TODO: ts worker
+  // @todo-id ts-worker
 }

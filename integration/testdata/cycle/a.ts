@@ -1,5 +1,6 @@
-// TODO:[#a] wire API layer
-// DEPS: #b
+// TODO: wire API layer
+// @todo-id a
+// @todo-deps b
 
 import { persist } from "./b"
 

@@ -15,6 +15,7 @@ import (
 var (
 	todoLinePattern = regexp.MustCompile(`TODO:?`)
 	todoIDPattern   = regexp.MustCompile(`^[a-z0-9_-]+$`)
+	commentLine     = regexp.MustCompile(`^\s*(//|#|--|/\*|<!--|\*|"""|''')`)
 )
 
 var commentClosers = []string{"*/", "-->", `"""`, `'''`}
@@ -111,9 +112,10 @@ func scanFile(path, rel string) ([]graph.Edge, []graph.Todo, []ScanError, error)
 	todos := make(map[string]graph.Todo)
 
 	type pending struct {
-		line int
-		id   string
-		deps []string
+		line    int
+		id      string
+		deps    []string
+		invalid bool
 	}
 	var current *pending
 
@@ -124,6 +126,7 @@ func scanFile(path, rel string) ([]graph.Edge, []graph.Todo, []ScanError, error)
 		line := lines[i]
 		trimmed := strings.TrimSpace(line)
 
+		skip := false
 		isCommentStart := strings.HasPrefix(trimmed, "//") ||
 			strings.HasPrefix(trimmed, "#") ||
 			strings.HasPrefix(trimmed, "--") ||
@@ -134,6 +137,21 @@ func scanFile(path, rel string) ([]graph.Edge, []graph.Todo, []ScanError, error)
 			(inBlock && strings.HasPrefix(trimmed, "*"))
 
 		comment := inBlock || isCommentStart
+
+		// inline comment markers with TODO after code
+		if !comment {
+			inlineMarkers := []string{"//", "#", "--", "/*"}
+			for _, m := range inlineMarkers {
+				if idx := strings.Index(line, m); idx > 0 && strings.Contains(line[idx:], "TODO") {
+					errs = append(errs, ScanError{File: rel, Line: i + 1, Msg: "TODO must start at a comment line"})
+					skip = true
+					break
+				}
+			}
+			if skip {
+				continue
+			}
+		}
 
 		// close block if end appears on this line
 		if inBlock && blockEnd != "" && strings.Contains(line, blockEnd) {
@@ -169,9 +187,9 @@ func scanFile(path, rel string) ([]graph.Edge, []graph.Todo, []ScanError, error)
 
 		// break association on blank or non-comment
 		if current != nil && (trimmed == "" || (!comment && !todoLinePattern.MatchString(trimmed))) {
-			if current.id == "" {
+			if current.id == "" && !current.invalid {
 				errs = append(errs, ScanError{File: rel, Line: current.line, Msg: "TODO id is required (add @todo-id)"})
-			} else {
+			} else if !current.invalid {
 				todos[current.id] = graph.Todo{ID: current.id, File: rel, Line: current.line}
 				for _, dep := range current.deps {
 					edges = append(edges, graph.Edge{From: dep, To: current.id, Type: "blocks"})
@@ -180,8 +198,9 @@ func scanFile(path, rel string) ([]graph.Edge, []graph.Todo, []ScanError, error)
 			current = nil
 		}
 
-		// inline TODO not allowed
-		if todoLinePattern.MatchString(line) && !isCommentStart && !inBlock {
+		// inline TODO not allowed (only if a comment marker is present)
+		if todoLinePattern.MatchString(line) && !isCommentStart && !inBlock &&
+			(strings.Contains(line, "//") || strings.Contains(line, "#") || strings.Contains(line, "--") || strings.Contains(line, "/*")) {
 			errs = append(errs, ScanError{File: rel, Line: i + 1, Msg: "TODO must start at a comment line"})
 			continue
 		}
@@ -194,9 +213,9 @@ func scanFile(path, rel string) ([]graph.Edge, []graph.Todo, []ScanError, error)
 		if match != nil {
 			// close previous pending
 			if current != nil {
-				if current.id == "" {
+				if current.id == "" && !current.invalid {
 					errs = append(errs, ScanError{File: rel, Line: current.line, Msg: "TODO id is required (add @todo-id)"})
-				} else {
+				} else if !current.invalid {
 					todos[current.id] = graph.Todo{ID: current.id, File: rel, Line: current.line}
 					for _, dep := range current.deps {
 						edges = append(edges, graph.Edge{From: dep, To: current.id, Type: "blocks"})
@@ -213,7 +232,8 @@ func scanFile(path, rel string) ([]graph.Edge, []graph.Todo, []ScanError, error)
 		}
 
 		// metadata handling
-		lower := strings.ToLower(trimmed)
+		cleaned := strings.TrimSpace(commentLine.ReplaceAllString(line, ""))
+		lower := strings.ToLower(cleaned)
 		if current == nil {
 			if strings.HasPrefix(lower, "@todo-id") || strings.HasPrefix(lower, "@todo-deps") {
 				errs = append(errs, ScanError{File: rel, Line: i + 1, Msg: "metadata without a preceding TODO"})
@@ -223,9 +243,9 @@ func scanFile(path, rel string) ([]graph.Edge, []graph.Todo, []ScanError, error)
 
 		switch {
 		case strings.HasPrefix(lower, "@todo-id"):
-			val := strings.TrimSpace(strings.TrimPrefix(lower, "@todo-id"))
+			val := strings.TrimSpace(strings.TrimPrefix(cleaned, "@todo-id"))
 			val = strings.TrimPrefix(val, ":")
-			val = strings.TrimSpace(val)
+			val = strings.TrimSpace(cleanCommentSuffix(val))
 			if val == "" {
 				errs = append(errs, ScanError{File: rel, Line: i + 1, Msg: "TODO id must not be empty"})
 				continue
@@ -236,13 +256,14 @@ func scanFile(path, rel string) ([]graph.Edge, []graph.Todo, []ScanError, error)
 					Line: i + 1,
 					Msg:  fmt.Sprintf("TODO id %q must use lowercase letters, digits, hyphens, or underscores", val),
 				})
+				current.invalid = true
 				continue
 			}
 			current.id = val
 		case strings.HasPrefix(lower, "@todo-deps"):
-			raw := strings.TrimSpace(strings.TrimPrefix(lower, "@todo-deps"))
+			raw := strings.TrimSpace(strings.TrimPrefix(cleaned, "@todo-deps"))
 			raw = strings.TrimPrefix(raw, ":")
-			raw = strings.TrimSpace(raw)
+			raw = strings.TrimSpace(cleanCommentSuffix(raw))
 			ids, idErrs := parseIDs(raw, i+1, rel)
 			errs = append(errs, idErrs...)
 			current.deps = append(current.deps, ids...)
@@ -255,12 +276,14 @@ func scanFile(path, rel string) ([]graph.Edge, []graph.Todo, []ScanError, error)
 
 	// flush pending
 	if current != nil {
-		if current.id == "" {
+		if current.id == "" && !current.invalid {
 			errs = append(errs, ScanError{File: rel, Line: current.line, Msg: "TODO id is required (add @todo-id)"})
 		} else {
-			todos[current.id] = graph.Todo{ID: current.id, File: rel, Line: current.line}
-			for _, dep := range current.deps {
-				edges = append(edges, graph.Edge{From: dep, To: current.id, Type: "blocks"})
+			if !current.invalid {
+				todos[current.id] = graph.Todo{ID: current.id, File: rel, Line: current.line}
+				for _, dep := range current.deps {
+					edges = append(edges, graph.Edge{From: dep, To: current.id, Type: "blocks"})
+				}
 			}
 		}
 	}
@@ -272,44 +295,6 @@ func scanFile(path, rel string) ([]graph.Edge, []graph.Todo, []ScanError, error)
 	}
 
 	return edges, todoList, errs, nil
-}
-
-func parseIDs(raw string, line int, file string) ([]string, []ScanError) {
-	if raw == "" {
-		return nil, nil
-	}
-	trimmed := strings.TrimSpace(cleanCommentSuffix(raw))
-	if trimmed == "" {
-		return nil, nil
-	}
-
-	if !strings.Contains(trimmed, ",") && strings.Contains(trimmed, " ") {
-		return nil, []ScanError{{File: file, Line: line, Msg: "ids must be comma-separated (e.g. a, b)"}}
-	}
-
-	parts := strings.Split(trimmed, ",")
-
-	var ids []string
-	var errs []ScanError
-	for _, p := range parts {
-		p = strings.TrimSpace(p)
-		if p == "" {
-			continue
-		}
-		if strings.HasPrefix(p, "#") {
-			p = strings.TrimPrefix(p, "#")
-		}
-		if !todoIDPattern.MatchString(p) {
-			errs = append(errs, ScanError{
-				File: file,
-				Line: line,
-				Msg:  fmt.Sprintf("id %q must use lowercase letters, digits, hyphens, or underscores", p),
-			})
-			continue
-		}
-		ids = append(ids, p)
-	}
-	return ids, errs
 }
 
 func cleanCommentSuffix(s string) string {

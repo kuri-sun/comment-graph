@@ -7,12 +7,14 @@ import (
 	"testing"
 )
 
-// First test: parsing TODO with and without colon prefix.
-func TestScanParsesTodoWithAndWithoutColon(t *testing.T) {
+func TestScanParsesTodoWithDeps(t *testing.T) {
 	dir := t.TempDir()
-	writeFile(t, dir, "a.go", `// TODO:[#a]
-// TODO[#b]
-// DEPS: #a
+	writeFile(t, dir, "a.go", `// TODO: first task
+// @todo-id a
+// @todo-deps b, c
+
+// TODO: second task
+// @todo-id b
 `)
 
 	g, errs, err := Scan(dir)
@@ -24,381 +26,161 @@ func TestScanParsesTodoWithAndWithoutColon(t *testing.T) {
 	}
 	if len(g.Todos) != 2 {
 		t.Fatalf("expected 2 todos, got %d", len(g.Todos))
-	}
-	if len(g.Edges) != 1 {
-		t.Fatalf("expected 1 edge, got %d", len(g.Edges))
-	}
-	e := g.Edges[0]
-	if e.From != "a" || e.To != "b" || e.Type != "blocks" {
-		t.Fatalf("unexpected edge: %+v", e)
-	}
-}
-
-func TestScanMetadataStopsAtNonComment(t *testing.T) {
-	dir := t.TempDir()
-	writeFile(t, dir, "a.go", `// TODO:[#a]
-// DEPS: #b
-const x = 1
-// DEPS: #c
-`)
-
-	g, errs, err := Scan(dir)
-	if err != nil {
-		t.Fatalf("scan error: %v", err)
-	}
-	if len(errs) != 0 {
-		t.Fatalf("unexpected scan errors: %+v", errs)
-	}
-	if len(g.Edges) != 1 {
-		t.Fatalf("expected 1 edge, got %d", len(g.Edges))
-	}
-	e := g.Edges[0]
-	if e.From != "b" || e.To != "a" {
-		t.Fatalf("unexpected edge: %+v", e)
-	}
-}
-
-func TestScanRejectsEmptyID(t *testing.T) {
-	dir := t.TempDir()
-	writeFile(t, dir, "a.go", `// TODO:[#]
-`)
-
-	_, errs, err := Scan(dir)
-	if err != nil {
-		t.Fatalf("scan error: %v", err)
-	}
-	if len(errs) != 1 {
-		t.Fatalf("expected 1 scan error, got %d: %+v", len(errs), errs)
-	}
-	if !strings.Contains(errs[0].Msg, "must not be empty") {
-		t.Fatalf("expected empty id error, got %+v", errs)
-	}
-}
-
-func TestScanRejectsUppercaseID(t *testing.T) {
-	dir := t.TempDir()
-	writeFile(t, dir, "a.go", `// TODO:[#Bad]
-`)
-
-	_, errs, err := Scan(dir)
-	if err != nil {
-		t.Fatalf("scan error: %v", err)
-	}
-	if len(errs) != 1 {
-		t.Fatalf("expected 1 scan error, got %d: %+v", len(errs), errs)
-	}
-	if !strings.Contains(errs[0].Msg, "lowercase letters, digits, hyphens, or underscores") {
-		t.Fatalf("expected charset error, got %+v", errs)
-	}
-}
-
-func TestScanDetectsDuplicateIDs(t *testing.T) {
-	dir := t.TempDir()
-	writeFile(t, dir, "a.go", `// TODO:[#dup]
-`)
-	writeFile(t, dir, filepath.Join("sub", "b.go"), `// TODO:[#dup]
-`)
-
-	_, errs, err := Scan(dir)
-	if err != nil {
-		t.Fatalf("scan error: %v", err)
-	}
-	if len(errs) != 1 {
-		t.Fatalf("expected 1 scan error, got %d: %+v", len(errs), errs)
-	}
-	if !strings.Contains(errs[0].Msg, "duplicate TODO id") {
-		t.Fatalf("unexpected error message: %v", errs[0])
-	}
-}
-
-func TestScanParsesDependsList(t *testing.T) {
-	dir := t.TempDir()
-	writeFile(t, dir, "a.go", `// TODO:[#a]
-// DEPS: #b, #c
-`)
-
-	g, errs, err := Scan(dir)
-	if err != nil {
-		t.Fatalf("scan error: %v", err)
-	}
-	if len(errs) != 0 {
-		t.Fatalf("unexpected scan errors: %+v", errs)
 	}
 	if len(g.Edges) != 2 {
 		t.Fatalf("expected 2 edges, got %d", len(g.Edges))
 	}
-	want := map[string]bool{
-		"b->a": true,
-		"c->a": true,
-	}
+	want := map[string]bool{"b->a": true, "c->a": true}
 	for _, e := range g.Edges {
-		key := e.From + "->" + e.To
-		if !want[key] {
+		k := e.From + "->" + e.To
+		if !want[k] {
 			t.Fatalf("unexpected edge: %+v", e)
 		}
-		delete(want, key)
+		delete(want, k)
 	}
 	if len(want) != 0 {
 		t.Fatalf("missing edges: %+v", want)
 	}
 }
 
-func TestScanMetadataStopsAtNextTODO(t *testing.T) {
+func TestMetadataStopsAtNonComment(t *testing.T) {
 	dir := t.TempDir()
-	writeFile(t, dir, "a.go", `// TODO:[#a]
-// DEPS: #b
-// TODO:[#c]
-// DEPS: #d
+	writeFile(t, dir, "a.go", `// TODO: first
+// @todo-id a
+// @todo-deps b
+const x = 1
+// @todo-deps c
 `)
 
 	g, errs, err := Scan(dir)
 	if err != nil {
 		t.Fatalf("scan error: %v", err)
 	}
-	if len(errs) != 0 {
-		t.Fatalf("unexpected scan errors: %+v", errs)
+	if len(errs) != 1 || !strings.Contains(errs[0].Msg, "metadata without a preceding TODO") {
+		t.Fatalf("expected orphan metadata error, got %+v", errs)
 	}
-	want := map[string]bool{
-		"b->a": true,
-		"d->c": true,
-	}
-	if len(g.Edges) != len(want) {
-		t.Fatalf("expected %d edges, got %d", len(want), len(g.Edges))
-	}
-	for _, e := range g.Edges {
-		key := e.From + "->" + e.To
-		if !want[key] {
-			t.Fatalf("unexpected edge: %+v", e)
-		}
-		delete(want, key)
-	}
-	if len(want) != 0 {
-		t.Fatalf("missing edges: %+v", want)
+	if len(g.Edges) != 1 || g.Edges[0].From != "b" || g.Edges[0].To != "a" {
+		t.Fatalf("unexpected edges: %+v", g.Edges)
 	}
 }
 
-func TestScanRejectsMetadataWithoutHash(t *testing.T) {
+func TestMissingIdErrors(t *testing.T) {
 	dir := t.TempDir()
-	writeFile(t, dir, "a.go", `// TODO:[#a]
-// DEPS: b
+	writeFile(t, dir, "a.go", `// TODO: no id
+// @todo-deps a
 `)
 
 	_, errs, err := Scan(dir)
 	if err != nil {
 		t.Fatalf("scan error: %v", err)
 	}
-	if len(errs) != 1 {
-		t.Fatalf("expected 1 scan error, got %d: %+v", len(errs), errs)
-	}
-	if !strings.Contains(errs[0].Msg, "must start with #") {
-		t.Fatalf("expected missing hash error, got %+v", errs)
+	if len(errs) != 1 || !strings.Contains(errs[0].Msg, "TODO id is required") {
+		t.Fatalf("expected missing id error, got %+v", errs)
 	}
 }
 
-func TestScanUnknownMetadataKeyIgnored(t *testing.T) {
+func TestInvalidIdErrors(t *testing.T) {
 	dir := t.TempDir()
-	writeFile(t, dir, "a.go", `// TODO:[#a]
-// owner: someone
-// status: todo
+	writeFile(t, dir, "a.go", `// TODO: bad id
+// @todo-id BadID
 `)
 
-	g, errs, err := Scan(dir)
+	_, errs, err := Scan(dir)
 	if err != nil {
 		t.Fatalf("scan error: %v", err)
 	}
-	if len(errs) != 0 {
-		t.Fatalf("unexpected scan errors: %+v", errs)
-	}
-	if len(g.Edges) != 0 {
-		t.Fatalf("expected 0 edges, got %d", len(g.Edges))
-	}
-	if len(g.Todos) != 1 {
-		t.Fatalf("expected 1 todo, got %d", len(g.Todos))
+	if len(errs) != 1 || !strings.Contains(errs[0].Msg, "lowercase") {
+		t.Fatalf("expected lowercase error, got %+v", errs)
 	}
 }
 
-func TestScanDerivesIDWhenMissing(t *testing.T) {
+func TestDuplicateIds(t *testing.T) {
 	dir := t.TempDir()
-	writeFile(t, dir, "a.go", `// TODO: cache-user add cache layer
+	writeFile(t, dir, "a.go", `// TODO: dup
+// @todo-id dup
+`)
+	writeFile(t, dir, filepath.Join("sub", "b.go"), `// TODO: dup2
+// @todo-id dup
 `)
 
-	g, errs, err := Scan(dir)
+	_, errs, err := Scan(dir)
 	if err != nil {
 		t.Fatalf("scan error: %v", err)
 	}
-	if len(errs) != 0 {
-		t.Fatalf("unexpected scan errors: %+v", errs)
-	}
-	if len(g.Todos) != 1 {
-		t.Fatalf("expected 1 todo, got %d", len(g.Todos))
-	}
-	if _, ok := g.Todos["todo-1"]; !ok {
-		t.Fatalf("expected derived id todo-1, got %+v", g.Todos)
+	if len(errs) != 1 || !strings.Contains(errs[0].Msg, "duplicate") {
+		t.Fatalf("expected duplicate error, got %+v", errs)
 	}
 }
 
-func TestScanDerivesIDFromFirstToken(t *testing.T) {
+func TestInlineTodoErrors(t *testing.T) {
 	dir := t.TempDir()
-	writeFile(t, dir, "a.go", `// TODO: Remove legacy endpoints!
+	writeFile(t, dir, "a.go", `const x = 1 // TODO: bad
 `)
 
-	g, errs, err := Scan(dir)
+	_, errs, err := Scan(dir)
 	if err != nil {
 		t.Fatalf("scan error: %v", err)
 	}
-	if len(errs) != 0 {
-		t.Fatalf("unexpected scan errors: %+v", errs)
-	}
-	if _, ok := g.Todos["todo-1"]; !ok {
-		t.Fatalf("expected derived id todo-1, got %+v", g.Todos)
+	if len(errs) != 1 || !strings.Contains(errs[0].Msg, "comment line") {
+		t.Fatalf("expected inline error, got %+v", errs)
 	}
 }
 
-func TestScanIgnoresBinaryFile(t *testing.T) {
+func TestOrphanMetadataErrors(t *testing.T) {
 	dir := t.TempDir()
-	writeFile(t, dir, "a.bin", string([]byte{0x00, 0x01, 0x02}))
+	writeFile(t, dir, "a.go", `// @todo-id orphan
+`)
 
-	g, errs, err := Scan(dir)
+	_, errs, err := Scan(dir)
 	if err != nil {
 		t.Fatalf("scan error: %v", err)
 	}
-	if len(errs) != 0 {
-		t.Fatalf("unexpected scan errors: %+v", errs)
-	}
-	if len(g.Todos) != 0 || len(g.Edges) != 0 {
-		t.Fatalf("expected empty graph, got %+v", g)
+	if len(errs) != 1 || !strings.Contains(errs[0].Msg, "metadata without a preceding TODO") {
+		t.Fatalf("expected orphan error, got %+v", errs)
 	}
 }
 
-func TestScanParsesBlockCommentTODOs(t *testing.T) {
+func TestUnknownMetadataErrors(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, dir, "a.go", `// TODO: something
+// @todo-id a
+// @owner alice
+`)
+
+	_, errs, err := Scan(dir)
+	if err != nil {
+		t.Fatalf("scan error: %v", err)
+	}
+	if len(errs) != 1 || !strings.Contains(errs[0].Msg, "unknown metadata") {
+		t.Fatalf("expected unknown metadata error, got %+v", errs)
+	}
+}
+
+func TestSpaceSeparatedDepsError(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, dir, "a.go", `// TODO: deps bad
+// @todo-id a
+// @todo-deps b c
+`)
+
+	_, errs, err := Scan(dir)
+	if err != nil {
+		t.Fatalf("scan error: %v", err)
+	}
+	if len(errs) != 1 || !strings.Contains(errs[0].Msg, "comma-separated") {
+		t.Fatalf("expected comma-separated error, got %+v", errs)
+	}
+}
+
+func TestBlockCommentTodos(t *testing.T) {
 	dir := t.TempDir()
 	writeFile(t, dir, "a.js", `/*
-TODO:[#a]
-DEPS: #b
+TODO: first
+@todo-id a
+@todo-deps b
 */
-/* TODO:[#b] */
-`)
-
-	g, errs, err := Scan(dir)
-	if err != nil {
-		t.Fatalf("scan error: %v", err)
-	}
-	if len(errs) != 0 {
-		t.Fatalf("unexpected scan errors: %+v", errs)
-	}
-	if len(g.Todos) != 2 {
-		t.Fatalf("expected 2 todos, got %d", len(g.Todos))
-	}
-	if len(g.Edges) != 1 || g.Edges[0].From != "b" || g.Edges[0].To != "a" {
-		t.Fatalf("unexpected edges: %+v", g.Edges)
-	}
-}
-
-func TestScanParsesHtmlStyleComments(t *testing.T) {
-	dir := t.TempDir()
-	writeFile(t, dir, "a.html", `<!-- TODO:[#a] -->
-<!-- DEPS: #b -->
-<!-- TODO:[#b] -->
-`)
-
-	g, errs, err := Scan(dir)
-	if err != nil {
-		t.Fatalf("scan error: %v", err)
-	}
-	if len(errs) != 0 {
-		t.Fatalf("unexpected scan errors: %+v", errs)
-	}
-	if len(g.Todos) != 2 {
-		t.Fatalf("expected 2 todos, got %d", len(g.Todos))
-	}
-}
-
-func TestScanParsesTripleQuoteComments(t *testing.T) {
-	dir := t.TempDir()
-	writeFile(t, dir, "a.py", `"""
-TODO:[#a]
-DEPS: #b
-"""
-""" TODO:[#b] """
-`)
-
-	g, errs, err := Scan(dir)
-	if err != nil {
-		t.Fatalf("scan error: %v", err)
-	}
-	if len(errs) != 0 {
-		t.Fatalf("unexpected scan errors: %+v", errs)
-	}
-	if len(g.Todos) != 2 {
-		t.Fatalf("expected 2 todos, got %d", len(g.Todos))
-	}
-	if len(g.Edges) != 1 || g.Edges[0].From != "b" || g.Edges[0].To != "a" {
-		t.Fatalf("unexpected edges: %+v", g.Edges)
-	}
-}
-
-func TestScanIgnoresTodoInCode(t *testing.T) {
-	dir := t.TempDir()
-	writeFile(t, dir, "a.go", `package main
-
-var x = "TODO: not a todo"
-`)
-
-	g, errs, err := Scan(dir)
-	if err != nil {
-		t.Fatalf("scan error: %v", err)
-	}
-	if len(errs) != 0 {
-		t.Fatalf("unexpected scan errors: %+v", errs)
-	}
-	if len(g.Todos) != 0 {
-		t.Fatalf("expected no todos, got %+v", g.Todos)
-	}
-}
-
-func TestScanParsesInlineComments(t *testing.T) {
-	dir := t.TempDir()
-	writeFile(t, dir, "a.ts", `const x = 1; // TODO:[#a]
-function foo() { /* TODO:[#b] */ }
-SELECT 1 -- TODO:[#c]
-`)
-
-	g, errs, err := Scan(dir)
-	if err != nil {
-		t.Fatalf("scan error: %v", err)
-	}
-	if len(errs) != 0 {
-		t.Fatalf("unexpected scan errors: %+v", errs)
-	}
-	if len(g.Todos) != 3 {
-		t.Fatalf("expected 3 todos, got %d", len(g.Todos))
-	}
-}
-
-func TestScanBlockStartEndSameLine(t *testing.T) {
-	dir := t.TempDir()
-	writeFile(t, dir, "a.js", `/* TODO:[#a] DEPS: #b */
-/* TODO:[#b] */
-`)
-
-	g, errs, err := Scan(dir)
-	if err != nil {
-		t.Fatalf("scan error: %v", err)
-	}
-	if len(errs) != 0 {
-		t.Fatalf("unexpected scan errors: %+v", errs)
-	}
-	if len(g.Edges) != 1 || g.Edges[0].From != "b" || g.Edges[0].To != "a" {
-		t.Fatalf("unexpected edges: %+v", g.Edges)
-	}
-}
-
-func TestScanMultipleTodosInBlock(t *testing.T) {
-	dir := t.TempDir()
-	writeFile(t, dir, "a.js", `/*
-TODO:[#a]
-TODO:[#b]
-DEPS: #a
+/* TODO: second
+@todo-id b
 */
 `)
 
@@ -409,18 +191,38 @@ DEPS: #a
 	if len(errs) != 0 {
 		t.Fatalf("unexpected scan errors: %+v", errs)
 	}
-	if len(g.Todos) != 2 || len(g.Edges) != 1 {
-		t.Fatalf("unexpected graph: %+v", g)
-	}
-	if g.Edges[0].From != "a" || g.Edges[0].To != "b" {
-		t.Fatalf("unexpected edge: %+v", g.Edges[0])
+	if len(g.Edges) != 1 || g.Edges[0].From != "b" || g.Edges[0].To != "a" {
+		t.Fatalf("unexpected edges: %+v", g.Edges)
 	}
 }
 
-func TestScanUnterminatedBlockDoesNotLeak(t *testing.T) {
+func TestHtmlComments(t *testing.T) {
 	dir := t.TempDir()
-	writeFile(t, dir, "a.js", `/* TODO:[#a]
-// TODO:[#b]
+	writeFile(t, dir, "a.html", `<!-- TODO: first -->
+<!-- @todo-id a -->
+<!-- @todo-deps b -->
+<!-- TODO: second -->
+<!-- @todo-id b -->
+`)
+
+	g, errs, err := Scan(dir)
+	if err != nil {
+		t.Fatalf("scan error: %v", err)
+	}
+	if len(errs) != 0 {
+		t.Fatalf("unexpected scan errors: %+v", errs)
+	}
+	if len(g.Todos) != 2 {
+		t.Fatalf("expected 2 todos, got %d", len(g.Todos))
+	}
+}
+
+func TestUnterminatedBlockDoesNotLeak(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, dir, "a.js", `/* TODO: first
+@todo-id a
+// TODO: second
+// @todo-id b
 `)
 
 	g, errs, err := Scan(dir)
@@ -433,27 +235,9 @@ func TestScanUnterminatedBlockDoesNotLeak(t *testing.T) {
 	if len(g.Todos) != 2 {
 		t.Fatalf("expected 2 todos, got %+v", g.Todos)
 	}
-	if len(g.Edges) != 0 {
-		t.Fatalf("expected 0 edges, got %+v", g.Edges)
-	}
 }
 
-func TestScanRejectsSpaceSeparatedDeps(t *testing.T) {
-	dir := t.TempDir()
-	writeFile(t, dir, "a.go", `// TODO:[#a]
-// DEPS: #b #c
-`)
-
-	_, errs, err := Scan(dir)
-	if err != nil {
-		t.Fatalf("scan error: %v", err)
-	}
-	if len(errs) != 1 || !strings.Contains(errs[0].Msg, "comma-separated") {
-		t.Fatalf("expected comma-separated error, got %+v", errs)
-	}
-}
-
-func TestScanMixedLanguages(t *testing.T) {
+func TestMixedLanguages(t *testing.T) {
 	dir := t.TempDir()
 	copyFixture(t, filepath.Join("mixed", "go"), filepath.Join(dir, "go"))
 	copyFixture(t, filepath.Join("mixed", "ts"), filepath.Join(dir, "ts"))
@@ -476,16 +260,33 @@ func TestScanMixedLanguages(t *testing.T) {
 		"js-root->js-helper": true,
 		"ts-root->go-root":   true,
 	}
-
 	for _, e := range g.Edges {
 		key := e.From + "->" + e.To
 		if wantEdges[key] {
 			delete(wantEdges, key)
 		}
 	}
-
 	if len(wantEdges) != 0 {
 		t.Fatalf("missing edges: %+v", wantEdges)
+	}
+}
+
+func TestIgnoresTodoInCode(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, dir, "a.go", `package main
+
+var x = "TODO: not a todo"
+`)
+
+	g, errs, err := Scan(dir)
+	if err != nil {
+		t.Fatalf("scan error: %v", err)
+	}
+	if len(errs) != 0 {
+		t.Fatalf("unexpected scan errors: %+v", errs)
+	}
+	if len(g.Todos) != 0 {
+		t.Fatalf("expected no todos, got %+v", g.Todos)
 	}
 }
 

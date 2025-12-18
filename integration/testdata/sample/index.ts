@@ -1,5 +1,6 @@
-// TODO:[#cleanup-sample] remove legacy endpoints
-// DEPS: #cache-sample
+// TODO: remove legacy endpoints
+// @todo-id cleanup-sample
+// @todo-deps cache-sample
 
 import { getUser } from "./users"
 

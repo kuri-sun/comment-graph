@@ -1,5 +1,6 @@
-// TODO:[#b] implement storage
-// DEPS: #a
+// TODO: implement storage
+// @todo-id b
+// @todo-deps a
 
 export async function persist(data: string) {
   return saveToDB(data)

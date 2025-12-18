@@ -1,9 +1,11 @@
-// TODO:[#db-sample] migrate user table
+// TODO: migrate user table
+// @todo-id db-sample
 
 const cache: Record<string, User> = {}
 
-// TODO:[#cache-sample] add cache layer for user reads
-// DEPS: #db-sample
+// TODO: add cache layer for user reads
+// @todo-id cache-sample
+// @todo-deps db-sample
 export async function getUser(id: string): Promise<User> {
   const cached = cache[id]
   if (cached) return cached
