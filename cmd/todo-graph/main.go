@@ -96,9 +96,9 @@ func runScan(p printer, showTree bool) int {
 		p.section("TODO Graph")
 		for _, id := range roots {
 			if t, ok := graph.Todos[id]; ok {
-				fmt.Printf("  - [ ] %s (%s:%d)\n", id, t.File, t.Line)
+				fmt.Printf("  - [] %s (%s:%d)\n", id, t.File, t.Line)
 			} else {
-				fmt.Printf("  - [ ] %s\n", id)
+				fmt.Printf("  - [] %s\n", id)
 			}
 		}
 	}
@@ -250,14 +250,14 @@ func renderTree(g graph.Graph) []string {
 		}
 		prefix := strings.Repeat("    ", depth)
 		if stack[id] {
-			lines = append(lines, fmt.Sprintf("%s- [ ] %s%s [cycle]", prefix, id, location))
+			lines = append(lines, fmt.Sprintf("%s- [] %s%s [cycle]", prefix, id, location))
 			return
 		}
 		if visited[id] && depth > 0 {
-			lines = append(lines, fmt.Sprintf("%s- [ ] %s%s [seen]", prefix, id, location))
+			lines = append(lines, fmt.Sprintf("%s- [] %s%s [seen]", prefix, id, location))
 			return
 		}
-		lines = append(lines, fmt.Sprintf("%s- [ ] %s%s", prefix, id, location))
+		lines = append(lines, fmt.Sprintf("%s- [] %s%s", prefix, id, location))
 		stack[id] = true
 		visited[id] = true
 		for _, next := range adj[id] {
