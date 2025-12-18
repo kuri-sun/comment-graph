@@ -45,6 +45,23 @@ func TestCLICheckFailsOnUndefinedReference(t *testing.T) {
 	}
 }
 
+func TestCLICheckDetectsCycle(t *testing.T) {
+	tmp := t.TempDir()
+	copyFixtureFile(t, filepath.Join("cycle", "a.ts"), tmp)
+	copyFixtureFile(t, filepath.Join("cycle", "b.ts"), tmp)
+
+	bin := buildCLI(t)
+	runCmd(t, bin, tmp, "scan")
+
+	code, out := runCmdExpectExit(t, bin, tmp, 2, "check")
+	if code != 2 {
+		t.Fatalf("expected exit 2, got %d\nout:\n%s", code, out)
+	}
+	if !strings.Contains(out, "cycle") {
+		t.Fatalf("expected cycle output, got:\n%s", out)
+	}
+}
+
 func readFile(t *testing.T, path string) string {
 	t.Helper()
 	data, err := os.ReadFile(path)
