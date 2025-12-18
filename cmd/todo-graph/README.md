@@ -8,6 +8,7 @@
 
 ### Flags and behavior
 
+- `--dir <path>` — run against a different repository root (useful in scripts/CI).
 - `--help`, `-h` — show usage.
 - Colors auto-enable on TTY; set `NO_COLOR=1` to disable.
 - Exit codes:

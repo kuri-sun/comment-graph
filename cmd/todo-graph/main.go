@@ -350,9 +350,9 @@ func printHelp() {
 	fmt.Println()
 	fmt.Println("Usage:")
 	fmt.Println("  todo-graph generate     Scan repository and write .todo-graph")
-	fmt.Println("      --dir <path>        Set working directory (defaults to cwd)")
+	fmt.Println("      --dir <path>        Run against a different root (defaults to cwd; useful in scripts)")
 	fmt.Println("  todo-graph check        Validate TODO graph consistency")
-	fmt.Println("      --dir <path>        Set working directory (defaults to cwd)")
+	fmt.Println("      --dir <path>        Target a different root")
 	fmt.Println("  todo-graph visualize    Show the graph as an indented tree")
-	fmt.Println("      --dir <path>        Set working directory (defaults to cwd)")
+	fmt.Println("      --dir <path>        Target a different root (runs generate first)")
 }
