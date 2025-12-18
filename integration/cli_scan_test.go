@@ -35,14 +35,12 @@ func TestCLICheckFailsOnUndefinedReference(t *testing.T) {
 	copyFixtureFile(t, filepath.Join("undefined", "index.ts"), tmp)
 
 	bin := buildCLI(t)
-	runCmd(t, bin, tmp, "generate")
-
-	code, out := runCmdExpectExit(t, bin, tmp, 1, "check")
+	code, out := runCmdExpectExit(t, bin, tmp, 1, "generate")
 	if code != 1 {
 		t.Fatalf("expected exit 1, got %d\nout:\n%s", code, out)
 	}
-	if !strings.Contains(out, "undefined TODO reference") {
-		t.Fatalf("expected undefined reference in output, got:\n%s", out)
+	if !strings.Contains(out, "missing \"missing-id\"") {
+		t.Fatalf("expected missing id in output, got:\n%s", out)
 	}
 }
 
@@ -53,9 +51,7 @@ func TestCLICheckDetectsCycle(t *testing.T) {
 	copyFixtureFile(t, filepath.Join("cycle", "b.ts"), tmp)
 
 	bin := buildCLI(t)
-	runCmd(t, bin, tmp, "generate")
-
-	code, out := runCmdExpectExit(t, bin, tmp, 2, "check")
+	code, out := runCmdExpectExit(t, bin, tmp, 2, "generate")
 	if code != 2 {
 		t.Fatalf("expected exit 2, got %d\nout:\n%s", code, out)
 	}
@@ -76,7 +72,7 @@ func TestCLICheckDetectsDrift(t *testing.T) {
 	// mutate .todo-graph to introduce drift
 	path := filepath.Join(tmp, ".todo-graph")
 	contents := readFile(t, path)
-	contents = strings.Replace(contents, "cleanup-legacy", "cleanup-legacy-changed", 1)
+	contents = strings.Replace(contents, "cleanup-sample", "cleanup-sample-changed", 1)
 	if err := os.WriteFile(path, []byte(contents), 0o644); err != nil {
 		t.Fatalf("mutate .todo-graph: %v", err)
 	}
@@ -96,9 +92,7 @@ func TestCLICheckDetectsIsolated(t *testing.T) {
 	copyFixtureFile(t, filepath.Join("isolated", "index.ts"), tmp)
 
 	bin := buildCLI(t)
-	runCmd(t, bin, tmp, "generate")
-
-	code, out := runCmdExpectExit(t, bin, tmp, 3, "check")
+	code, out := runCmdExpectExit(t, bin, tmp, 3, "generate")
 	if code != 3 {
 		t.Fatalf("expected exit 3, got %d\nout:\n%s", code, out)
 	}
