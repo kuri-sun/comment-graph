@@ -56,3 +56,21 @@ func TestValidateGraphDetectsCycles(t *testing.T) {
 		}
 	}
 }
+
+func TestValidateGraphDetectsIsolated(t *testing.T) {
+	g := graph.Graph{
+		Todos: map[string]graph.Todo{
+			"a": {ID: "a"},
+			"b": {ID: "b"},
+		},
+		Edges: []graph.Edge{
+			{From: "a", To: "a", Type: "blocks"}, // self edge
+		},
+	}
+
+	report := ValidateGraph(g, nil)
+
+	if len(report.Isolated) != 1 || report.Isolated[0] != "b" {
+		t.Fatalf("expected isolated [b], got %v", report.Isolated)
+	}
+}
