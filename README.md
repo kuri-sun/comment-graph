@@ -11,7 +11,7 @@ A small CLI that scans your codebase for `TODO` comments, builds a dependency gr
 
 Run commands in the repository you want to scan:
 
-- `todo-graph scan` — scan for TODOs and write `.todo-graph`.
+- `todo-graph generate` — scan for TODOs and write `.todo-graph`.
 - `todo-graph check` — validate TODO references, detect cycles/isolated nodes, and ensure `.todo-graph` matches source.
 - `todo-graph visualize` — read `.todo-graph` and print an indented tree of the TODO graph.
 

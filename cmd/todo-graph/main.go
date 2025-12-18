@@ -23,12 +23,12 @@ func main() {
 
 	cmd := os.Args[1]
 	switch cmd {
-	case "scan":
+	case "generate":
 		if len(os.Args) > 2 {
-			fmt.Fprintf(os.Stderr, "unknown flag for scan: %s\n", strings.Join(os.Args[2:], " "))
+			fmt.Fprintf(os.Stderr, "unknown flag for generate: %s\n", strings.Join(os.Args[2:], " "))
 			os.Exit(1)
 		}
-		os.Exit(runScan(p))
+		os.Exit(runGenerate(p))
 	case "check":
 		os.Exit(runCheck(p))
 	case "visualize":
@@ -42,7 +42,7 @@ func main() {
 	}
 }
 
-func runScan(p printer) int {
+func runGenerate(p printer) int {
 	root, err := currentRoot()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to resolve working directory: %v\n", err)
@@ -74,7 +74,7 @@ func runScan(p printer) int {
 	}
 
 	fmt.Println()
-	p.section("Scan complete")
+	p.section("Generate complete")
 	p.resultLine(true)
 	p.infof("generated : %s", filepath.Join(root, ".todo-graph"))
 	return 0
@@ -124,7 +124,7 @@ func runCheck(p printer) int {
 	}
 	fileGraph, err := engine.ReadGraph(root)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to read .todo-graph (run todo-graph scan): %v\n", err)
+		fmt.Fprintf(os.Stderr, "failed to read .todo-graph (run todo-graph generate): %v\n", err)
 		p.resultLine(false)
 		return 3
 	}
@@ -168,7 +168,7 @@ func runVisualize(args []string) int {
 
 	g, err := engine.ReadGraph(root)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to read .todo-graph (run todo-graph scan): %v\n", err)
+		fmt.Fprintf(os.Stderr, "failed to read .todo-graph (run todo-graph generate): %v\n", err)
 		return 1
 	}
 
@@ -262,7 +262,7 @@ func printHelp() {
 	fmt.Printf("todo-graph CLI (version %s)\n", version)
 	fmt.Println()
 	fmt.Println("Usage:")
-	fmt.Println("  todo-graph scan         Scan repository and update .todo-graph")
+	fmt.Println("  todo-graph generate     Scan repository and write .todo-graph")
 	fmt.Println("  todo-graph check        Validate TODO graph consistency")
 	fmt.Println("  todo-graph visualize    Show the graph as an indented tree")
 }

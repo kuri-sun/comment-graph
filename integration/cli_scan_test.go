@@ -8,14 +8,14 @@ import (
 	"testing"
 )
 
-// Integration: run `todo-graph scan` end-to-end against a temp TS repo with cross-file deps.
-func TestCLIScanWritesTodoGraph(t *testing.T) {
+// Integration: run `todo-graph generate` end-to-end against a temp TS repo with cross-file deps.
+func TestCLIGenerateWritesTodoGraph(t *testing.T) {
 	tmp := t.TempDir()
 	copyFixtureFile(t, filepath.Join("sample", "index.ts"), tmp)
 	copyFixtureFile(t, filepath.Join("sample", "users.ts"), tmp)
 
 	bin := buildCLI(t)
-	runCmd(t, bin, tmp, "scan")
+	runCmd(t, bin, tmp, "generate")
 
 	got := readFile(t, filepath.Join(tmp, ".todo-graph"))
 	if !strings.Contains(got, "\n  cache-sample:\n") || !strings.Contains(got, "\n  db-sample:\n") || !strings.Contains(got, "\n  cleanup-sample:\n") {
@@ -35,7 +35,7 @@ func TestCLICheckFailsOnUndefinedReference(t *testing.T) {
 	copyFixtureFile(t, filepath.Join("undefined", "index.ts"), tmp)
 
 	bin := buildCLI(t)
-	runCmd(t, bin, tmp, "scan")
+	runCmd(t, bin, tmp, "generate")
 
 	code, out := runCmdExpectExit(t, bin, tmp, 1, "check")
 	if code != 1 {
@@ -53,7 +53,7 @@ func TestCLICheckDetectsCycle(t *testing.T) {
 	copyFixtureFile(t, filepath.Join("cycle", "b.ts"), tmp)
 
 	bin := buildCLI(t)
-	runCmd(t, bin, tmp, "scan")
+	runCmd(t, bin, tmp, "generate")
 
 	code, out := runCmdExpectExit(t, bin, tmp, 2, "check")
 	if code != 2 {
@@ -71,7 +71,7 @@ func TestCLICheckDetectsDrift(t *testing.T) {
 	copyFixtureFile(t, filepath.Join("sample", "users.ts"), tmp)
 
 	bin := buildCLI(t)
-	runCmd(t, bin, tmp, "scan")
+	runCmd(t, bin, tmp, "generate")
 
 	// mutate .todo-graph to introduce drift
 	path := filepath.Join(tmp, ".todo-graph")
@@ -96,7 +96,7 @@ func TestCLICheckDetectsIsolated(t *testing.T) {
 	copyFixtureFile(t, filepath.Join("isolated", "index.ts"), tmp)
 
 	bin := buildCLI(t)
-	runCmd(t, bin, tmp, "scan")
+	runCmd(t, bin, tmp, "generate")
 
 	code, out := runCmdExpectExit(t, bin, tmp, 3, "check")
 	if code != 3 {
@@ -114,7 +114,7 @@ func TestCLIVisualizeOutputsMermaid(t *testing.T) {
 	copyFixtureFile(t, filepath.Join("sample", "users.ts"), tmp)
 
 	bin := buildCLI(t)
-	runCmd(t, bin, tmp, "scan")
+	runCmd(t, bin, tmp, "generate")
 
 	code, out := runCmdExpectExit(t, bin, tmp, 0, "visualize")
 	if code != 0 {
