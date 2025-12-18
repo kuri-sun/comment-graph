@@ -146,3 +146,22 @@ func TestValidateGraphReportsUndefinedFrom(t *testing.T) {
 		t.Fatalf("unexpected undefined edge: %+v", e)
 	}
 }
+
+func TestValidateGraphIsolatedWithConnectedNodes(t *testing.T) {
+	g := graph.Graph{
+		Todos: map[string]graph.Todo{
+			"a": {ID: "a"},
+			"b": {ID: "b"},
+			"c": {ID: "c"},
+		},
+		Edges: []graph.Edge{
+			{From: "a", To: "b", Type: "blocks"},
+		},
+	}
+
+	report := ValidateGraph(g, nil)
+
+	if len(report.Isolated) != 1 || report.Isolated[0] != "c" {
+		t.Fatalf("expected isolated [c], got %v", report.Isolated)
+	}
+}
