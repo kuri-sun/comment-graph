@@ -232,8 +232,8 @@ func TestScanDerivesIDWhenMissing(t *testing.T) {
 	if len(g.Todos) != 1 {
 		t.Fatalf("expected 1 todo, got %d", len(g.Todos))
 	}
-	if _, ok := g.Todos["cache-user"]; !ok {
-		t.Fatalf("expected derived id cache-user, got %+v", g.Todos)
+	if _, ok := g.Todos["todo-1"]; !ok {
+		t.Fatalf("expected derived id todo-1, got %+v", g.Todos)
 	}
 }
 
@@ -249,8 +249,8 @@ func TestScanDerivesIDFromFirstToken(t *testing.T) {
 	if len(errs) != 0 {
 		t.Fatalf("unexpected scan errors: %+v", errs)
 	}
-	if _, ok := g.Todos["remove"]; !ok {
-		t.Fatalf("expected derived id remove, got %+v", g.Todos)
+	if _, ok := g.Todos["todo-1"]; !ok {
+		t.Fatalf("expected derived id todo-1, got %+v", g.Todos)
 	}
 }
 

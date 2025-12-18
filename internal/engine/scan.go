@@ -280,36 +280,5 @@ func isBinary(content []byte) bool {
 }
 
 func deriveID(desc string, line int) string {
-	desc = strings.TrimSpace(desc)
-	if desc == "" {
-		return fmt.Sprintf("todo-%d", line)
-	}
-	for _, field := range strings.Fields(desc) {
-		id := slugify(field)
-		if todoIDPattern.MatchString(id) && id != "" {
-			return id
-		}
-	}
-	id := slugify(desc)
-	if id == "" {
-		return fmt.Sprintf("todo-%d", line)
-	}
-	return id
-}
-
-func slugify(s string) string {
-	var b strings.Builder
-	lastDash := false
-	for _, r := range strings.ToLower(s) {
-		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '_' {
-			b.WriteRune(r)
-			lastDash = false
-		} else {
-			if !lastDash {
-				b.WriteRune('-')
-				lastDash = true
-			}
-		}
-	}
-	return strings.Trim(b.String(), "-")
+	return fmt.Sprintf("todo-%d", line)
 }

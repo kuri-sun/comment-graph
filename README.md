@@ -20,21 +20,28 @@ Run commands in the repo you want to track TODOs:
 
 Add TODOs with optional IDs and dependencies in your code:
 
+user.ts
+
+```ts
+// TODO:[#db-migration] database migration
+function getUser() {
 ```
+
+cache.ts
+
+```ts
 // TODO: cache-user add cache layer for user reads
 // deps: #db-migration
-
-// TODO: cleanup-legacy remove legacy endpoints
-// deps: #cache-user
+function cacheUser() {
 ```
-
-IDs must use lowercase letters/digits/hyphens/underscores. If no `[#id]` is provided, an ID is derived from the description.
-Only `deps` metadata is parsed (one or more IDs, comma-separated, each prefixed with `#`).
 
 Then run:
 
 ```
-todo-graph generate   # writes .todo-graph
+todo-graph generate   # writes .todo-graph (validates first)
 todo-graph check      # validates references/cycles/drift
 todo-graph visualize  # shows an indented tree of the graph
 ```
+
+IDs must use lowercase letters/digits/hyphens/underscores. If no `[#id]` is provided, an ID like `todo-<line>` is generated.
+Only `deps` metadata is parsed (one or more IDs, comma-separated, each prefixed with `#`).
