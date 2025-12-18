@@ -174,7 +174,7 @@ func parseMetadata(lines []string, start int, file string) (depends []string, bl
 
 		key, values := parseKeyValue(line)
 		switch key {
-		case "depends-on":
+		case "deps":
 			ids, idErrs := parseIDs(values, idx+1, file)
 			errs = append(errs, idErrs...)
 			depends = append(depends, ids...)
@@ -202,30 +202,48 @@ func parseIDs(raw string, line int, file string) ([]string, []ScanError) {
 	if raw == "" {
 		return nil, nil
 	}
-	clean := strings.ReplaceAll(raw, ",", " ")
-	fields := strings.Fields(clean)
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return nil, nil
+	}
+
+	var parts []string
+	if strings.Contains(trimmed, ",") {
+		parts = strings.Split(trimmed, ",")
+	} else {
+		fields := strings.Fields(trimmed)
+		if len(fields) > 1 {
+			return nil, []ScanError{{File: file, Line: line, Msg: "ids must be comma-separated (e.g. #a, #b)"}}
+		}
+		parts = []string{trimmed}
+	}
+
 	var ids []string
 	var errs []ScanError
-	for _, f := range fields {
-		f = strings.TrimSpace(f)
-		if f == "" {
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if p == "" {
 			continue
 		}
-		if strings.HasPrefix(f, "#") {
-			f = strings.TrimPrefix(f, "#")
+		if strings.Contains(p, " ") {
+			errs = append(errs, ScanError{File: file, Line: line, Msg: "ids must be comma-separated (e.g. #a, #b)"})
+			continue
+		}
+		if strings.HasPrefix(p, "#") {
+			p = strings.TrimPrefix(p, "#")
 		} else {
-			errs = append(errs, ScanError{File: file, Line: line, Msg: fmt.Sprintf("id %q must start with #", f)})
+			errs = append(errs, ScanError{File: file, Line: line, Msg: fmt.Sprintf("id %q must start with #", p)})
 			continue
 		}
-		if !todoIDPattern.MatchString(f) {
+		if !todoIDPattern.MatchString(p) {
 			errs = append(errs, ScanError{
 				File: file,
 				Line: line,
-				Msg:  fmt.Sprintf("id %q must use lowercase letters, digits, hyphens, or underscores", f),
+				Msg:  fmt.Sprintf("id %q must use lowercase letters, digits, hyphens, or underscores", p),
 			})
 			continue
 		}
-		ids = append(ids, f)
+		ids = append(ids, p)
 	}
 	return ids, errs
 }

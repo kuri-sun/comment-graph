@@ -12,7 +12,7 @@ func TestScanParsesTodoWithAndWithoutColon(t *testing.T) {
 	dir := t.TempDir()
 	writeFile(t, dir, "a.go", `// TODO:[#a]
 // TODO[#b]
-// depends-on: #a
+// deps: #a
 `)
 
 	g, errs, err := Scan(dir)
@@ -37,9 +37,9 @@ func TestScanParsesTodoWithAndWithoutColon(t *testing.T) {
 func TestScanMetadataStopsAtNonComment(t *testing.T) {
 	dir := t.TempDir()
 	writeFile(t, dir, "a.go", `// TODO:[#a]
-// depends-on: #b
+// deps: #b
 const x = 1
-// depends-on: #c
+// deps: #c
 `)
 
 	g, errs, err := Scan(dir)
@@ -114,7 +114,7 @@ func TestScanDetectsDuplicateIDs(t *testing.T) {
 func TestScanParsesDependsList(t *testing.T) {
 	dir := t.TempDir()
 	writeFile(t, dir, "a.go", `// TODO:[#a]
-// depends-on: #b, #c
+// deps: #b, #c
 `)
 
 	g, errs, err := Scan(dir)
@@ -146,9 +146,9 @@ func TestScanParsesDependsList(t *testing.T) {
 func TestScanMetadataStopsAtNextTODO(t *testing.T) {
 	dir := t.TempDir()
 	writeFile(t, dir, "a.go", `// TODO:[#a]
-// depends-on: #b
+// deps: #b
 // TODO:[#c]
-// depends-on: #d
+// deps: #d
 `)
 
 	g, errs, err := Scan(dir)
@@ -180,7 +180,7 @@ func TestScanMetadataStopsAtNextTODO(t *testing.T) {
 func TestScanRejectsMetadataWithoutHash(t *testing.T) {
 	dir := t.TempDir()
 	writeFile(t, dir, "a.go", `// TODO:[#a]
-// depends-on: b
+// deps: b
 `)
 
 	_, errs, err := Scan(dir)

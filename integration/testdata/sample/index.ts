@@ -1,5 +1,5 @@
 // TODO: cleanup-sample remove legacy endpoints
-// depends-on: #cache-sample
+// deps: #cache-sample
 
 import { getUser } from "./users"
 

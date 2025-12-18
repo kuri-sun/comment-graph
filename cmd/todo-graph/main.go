@@ -62,7 +62,7 @@ func runGenerate(p printer) int {
 			fmt.Fprintf(os.Stderr, "  - %s:%d: %s\n", e.File, e.Line, e.Msg)
 		}
 		fmt.Fprintln(os.Stderr)
-		p.warnLine("Fix the TODO metadata above and re-run `todo-graph scan`.")
+		p.warnLine("Fix the TODO metadata above and re-run `todo-graph generate`.")
 		p.resultLine(false)
 		return 1
 	}
@@ -137,7 +137,7 @@ func runCheck(p printer) int {
 	}
 	if !engine.GraphsEqual(scanned, fileGraph) {
 		p.sectionErr("Out of date graph")
-		fmt.Fprintln(os.Stderr, "  .todo-graph is out of date (run todo-graph scan)")
+		fmt.Fprintln(os.Stderr, "  .todo-graph is out of date (run todo-graph generate)")
 		mismatch = true
 	}
 	if mismatch {

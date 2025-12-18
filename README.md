@@ -10,18 +10,18 @@ A small CLI that scans your codebase for `TODO` comments, builds a dependency gr
 
 ## Usage
 
-Run commands in the repo you want to scan your TODOs:
+Run commands in the repo you want to track TODOs:
 
 - `todo-graph generate` — scan for TODOs and write `.todo-graph`.
 - `todo-graph check` — validate TODO references, detect cycles/isolated nodes, and ensure `.todo-graph` matches source.
 - `todo-graph visualize` — read `.todo-graph` and print an indented tree of the TODO graph.
 
-### Quick start)
+### Quick start
 
 ```
 // TODO[#id] short description
-// depends-on: #other-id
+// deps: #a, #b
 ```
 
 IDs must use lowercase letters/digits/hyphens/underscores. If no `[#id]` is provided, an ID is derived from the description.
-Only `depends-on` metadata is parsed (one or more IDs, comma or space separated, each prefixed with `#`).
+Only `deps` metadata is parsed (one or more IDs, comma-separated, each prefixed with `#`).
