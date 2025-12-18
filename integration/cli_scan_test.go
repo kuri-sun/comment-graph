@@ -12,12 +12,13 @@ import (
 func TestCLIScanWritesTodoGraph(t *testing.T) {
 	tmp := t.TempDir()
 	copyFixtureFile(t, "index.ts", tmp)
+	copyFixtureFile(t, "user.ts", tmp)
 
 	bin := buildCLI(t)
 	runCmd(t, bin, tmp, "scan")
 
 	got := readFile(t, filepath.Join(tmp, ".todo-graph"))
-	if !strings.Contains(got, "\n  cache-user:\n") || !strings.Contains(got, "\n  db-migration:\n") {
+	if !strings.Contains(got, "\n  cache-user:\n") || !strings.Contains(got, "\n  db-migration:\n") || !strings.Contains(got, "\n  cleanup-legacy:\n") {
 		t.Fatalf("unexpected todos section:\n%s", got)
 	}
 	if !strings.Contains(got, "from: \"db-migration\"\n    to: \"cache-user\"") {
