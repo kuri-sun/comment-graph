@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	todoAnyPattern = regexp.MustCompile(`TODO:\s*\[#([^\]]*)\]`)
+	todoAnyPattern = regexp.MustCompile(`TODO:?\s*\[#([^\]]*)\]`)
 	todoIDPattern  = regexp.MustCompile(`^[a-z0-9-]+$`)
 	commentLine    = regexp.MustCompile(`^\s*(//|#)`)
 )

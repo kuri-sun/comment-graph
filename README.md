@@ -15,7 +15,7 @@ So `todo-graph` only tracks relationships—no status, no owner, no progress.
 ## TODO syntax
 
 ```txt
-TODO:[#<id>]
+TODO:[#id]   // or TODO[#id]
 ```
 
 - ID regex: `[a-z0-9-]+` (leading `#` required)
@@ -63,14 +63,14 @@ Only dependencies are stored; TODO state or owners are never recorded.
 
 ### Exit codes (`check`)
 
-| code | meaning              |
-| ---- | -------------------- |
-| 0    | clean                |
-| 1    | undefined reference  |
-| 2    | cycle detected       |
-| 3    | graph/code mismatch  |
+| code | meaning             |
+| ---- | ------------------- |
+| 0    | clean               |
+| 1    | undefined reference |
+| 2    | cycle detected      |
+| 3    | graph/code mismatch |
 
-## Edge cases
+## Edge cases.
 
 - `TODO:` without `[#id]` is ignored.
 - Empty ID (`TODO:[#]`) → error.
@@ -79,7 +79,7 @@ Only dependencies are stored; TODO state or owners are never recorded.
 - Self-dependency and cycles are detected.
 - Comments ending immediately after a TODO block stop metadata parsing.
 
-## Non-goals
+## Non Yet.
 
 - Status/progress tracking.
 - Ownership.
