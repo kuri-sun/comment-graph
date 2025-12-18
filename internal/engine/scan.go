@@ -14,7 +14,7 @@ import (
 
 var (
 	todoAnyPattern = regexp.MustCompile(`TODO:?\s*\[#([^\]]*)\]`)
-	todoIDPattern  = regexp.MustCompile(`^[a-z0-9-]+$`)
+	todoIDPattern  = regexp.MustCompile(`^[a-z0-9_-]+$`)
 	commentLine    = regexp.MustCompile(`^\s*(//|#)`)
 )
 
@@ -125,7 +125,7 @@ func scanFile(path, rel string) ([]graph.Edge, []graph.Todo, []ScanError, error)
 			errs = append(errs, ScanError{
 				File: rel,
 				Line: i + 1,
-				Msg:  fmt.Sprintf("TODO id %q must use lowercase letters, digits, or hyphens", rawID),
+				Msg:  fmt.Sprintf("TODO id %q must use lowercase letters, digits, hyphens, or underscores", rawID),
 			})
 			continue
 		}
@@ -219,7 +219,7 @@ func parseIDs(raw string, line int, file string) ([]string, []ScanError) {
 			errs = append(errs, ScanError{
 				File: file,
 				Line: line,
-				Msg:  fmt.Sprintf("id %q must use lowercase letters, digits, or hyphens", f),
+				Msg:  fmt.Sprintf("id %q must use lowercase letters, digits, hyphens, or underscores", f),
 			})
 			continue
 		}

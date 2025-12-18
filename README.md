@@ -18,7 +18,7 @@ So `todo-graph` only tracks relationships—no status, no owner, no progress.
 TODO:[#id]   // or TODO[#id]
 ```
 
-- ID regex: `[a-z0-9-]+` (leading `#` required)
+- ID regex: `[a-z0-9_-]+` (leading `#` required)
 - Example: `// TODO:[#cache-user] Implement user cache`
 
 Optional metadata (only dependencies are used):
