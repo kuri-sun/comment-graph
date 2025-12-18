@@ -3,6 +3,7 @@ package engine
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -69,6 +70,25 @@ func TestScanRejectsInvalidIDs(t *testing.T) {
 	}
 	if len(errs) != 2 {
 		t.Fatalf("expected 2 scan errors, got %d: %+v", len(errs), errs)
+	}
+}
+
+func TestScanDetectsDuplicateIDs(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, dir, "a.go", `// TODO:[#dup]
+`)
+	writeFile(t, dir, filepath.Join("sub", "b.go"), `// TODO:[#dup]
+`)
+
+	_, errs, err := Scan(dir)
+	if err != nil {
+		t.Fatalf("scan error: %v", err)
+	}
+	if len(errs) != 1 {
+		t.Fatalf("expected 1 scan error, got %d: %+v", len(errs), errs)
+	}
+	if !strings.Contains(errs[0].Msg, "duplicate TODO id") {
+		t.Fatalf("unexpected error message: %v", errs[0])
 	}
 }
 
