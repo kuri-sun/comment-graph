@@ -8,6 +8,7 @@
 
 ### Flags and behavior
 
+- `visualize --roots-only` — show only root TODOs (single-level view).
 - `--output <path>` — write `.todo-graph` to a custom path (useful for CI artifacts).
 - `--dir <path>` — run commands against a different repository root (useful in scripts/CI).
 - `--help`, `-h` — show usage.

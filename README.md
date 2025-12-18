@@ -30,6 +30,7 @@ todo-graph visualize  # shows a tree of the graph
 
 Pass `--dir <path>` to target a different repo root (helpful in scripts/CI).
 Pass `--output <path>` to `generate` to write the graph somewhere else (handy for CI artifacts).
+Use `visualize --roots-only` to list only root TODOs.
 
 Rules:
 - TODO must start on a comment line (not inline after code).
