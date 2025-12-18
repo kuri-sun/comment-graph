@@ -57,6 +57,21 @@ const x = 1
 	}
 }
 
+func TestScanRejectsInvalidIDs(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, dir, "a.go", `// TODO:[#]
+// TODO:[#Bad]
+`)
+
+	_, errs, err := Scan(dir)
+	if err != nil {
+		t.Fatalf("scan error: %v", err)
+	}
+	if len(errs) != 2 {
+		t.Fatalf("expected 2 scan errors, got %d: %+v", len(errs), errs)
+	}
+}
+
 func writeFile(t *testing.T, dir, name, content string) {
 	t.Helper()
 	path := filepath.Join(dir, name)
