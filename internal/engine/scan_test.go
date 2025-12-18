@@ -111,7 +111,7 @@ func TestScanDetectsDuplicateIDs(t *testing.T) {
 	}
 }
 
-func TestScanParsesDependsAndBlocksLists(t *testing.T) {
+func TestScanParsesDependsList(t *testing.T) {
 	dir := t.TempDir()
 	writeFile(t, dir, "a.go", `// TODO:[#a]
 // depends-on: #b, #c
@@ -234,6 +234,23 @@ func TestScanDerivesIDWhenMissing(t *testing.T) {
 	}
 	if _, ok := g.Todos["cache-user"]; !ok {
 		t.Fatalf("expected derived id cache-user, got %+v", g.Todos)
+	}
+}
+
+func TestScanDerivesIDFromFirstToken(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, dir, "a.go", `// TODO: Remove legacy endpoints!
+`)
+
+	g, errs, err := Scan(dir)
+	if err != nil {
+		t.Fatalf("scan error: %v", err)
+	}
+	if len(errs) != 0 {
+		t.Fatalf("unexpected scan errors: %+v", errs)
+	}
+	if _, ok := g.Todos["remove"]; !ok {
+		t.Fatalf("expected derived id remove, got %+v", g.Todos)
 	}
 }
 
