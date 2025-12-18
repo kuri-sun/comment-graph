@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-// Integration: run `todo-graph scan` end-to-end against a temp TS repo.
+// Integration: run `todo-graph scan` end-to-end against a temp TS repo with cross-file deps.
 func TestCLIScanWritesTodoGraph(t *testing.T) {
 	tmp := t.TempDir()
 	copyFixtureFile(t, "index.ts", tmp)
@@ -29,6 +29,7 @@ func TestCLIScanWritesTodoGraph(t *testing.T) {
 	}
 }
 
+// Integration: `check` should fail with exit 1 on undefined references.
 func TestCLICheckFailsOnUndefinedReference(t *testing.T) {
 	tmp := t.TempDir()
 	copyFixtureFile(t, filepath.Join("undefined", "index.ts"), tmp)
@@ -45,6 +46,7 @@ func TestCLICheckFailsOnUndefinedReference(t *testing.T) {
 	}
 }
 
+// Integration: `check` should fail with exit 2 on cycles.
 func TestCLICheckDetectsCycle(t *testing.T) {
 	tmp := t.TempDir()
 	copyFixtureFile(t, filepath.Join("cycle", "a.ts"), tmp)
@@ -62,6 +64,7 @@ func TestCLICheckDetectsCycle(t *testing.T) {
 	}
 }
 
+// Integration: `check` should fail with exit 3 when .todo-graph drifts from code.
 func TestCLICheckDetectsDrift(t *testing.T) {
 	tmp := t.TempDir()
 	copyFixtureFile(t, "index.ts", tmp)
@@ -87,6 +90,7 @@ func TestCLICheckDetectsDrift(t *testing.T) {
 	}
 }
 
+// Integration: `check` should surface isolated TODOs via exit 3.
 func TestCLICheckDetectsIsolated(t *testing.T) {
 	tmp := t.TempDir()
 	copyFixtureFile(t, filepath.Join("isolated", "index.ts"), tmp)
@@ -103,6 +107,7 @@ func TestCLICheckDetectsIsolated(t *testing.T) {
 	}
 }
 
+// Integration: visualize should emit mermaid with the discovered edges.
 func TestCLIVisualizeOutputsMermaid(t *testing.T) {
 	tmp := t.TempDir()
 	copyFixtureFile(t, "index.ts", tmp)
