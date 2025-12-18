@@ -220,6 +220,22 @@ func TestScanUnknownMetadataKeyIgnored(t *testing.T) {
 	}
 }
 
+func TestScanIgnoresBinaryFile(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, dir, "a.bin", string([]byte{0x00, 0x01, 0x02}))
+
+	g, errs, err := Scan(dir)
+	if err != nil {
+		t.Fatalf("scan error: %v", err)
+	}
+	if len(errs) != 0 {
+		t.Fatalf("unexpected scan errors: %+v", errs)
+	}
+	if len(g.Todos) != 0 || len(g.Edges) != 0 {
+		t.Fatalf("expected empty graph, got %+v", g)
+	}
+}
+
 func writeFile(t *testing.T, dir, name, content string) {
 	t.Helper()
 	path := filepath.Join(dir, name)
