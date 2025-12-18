@@ -3,6 +3,7 @@ package engine
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"todo-graph/internal/graph"
@@ -34,5 +35,28 @@ func TestWriteReadGraphRoundTrip(t *testing.T) {
 	}
 	if !GraphsEqual(g, read) {
 		t.Fatalf("graphs not equal after round trip: %+v vs %+v", g, read)
+	}
+}
+
+func TestWriteGraphEmptyFormatsSections(t *testing.T) {
+	dir := t.TempDir()
+	g := graph.Graph{
+		Todos: map[string]graph.Todo{},
+		Edges: nil,
+	}
+
+	if err := WriteGraph(dir, g); err != nil {
+		t.Fatalf("write graph: %v", err)
+	}
+	data, err := os.ReadFile(filepath.Join(dir, ".todo-graph"))
+	if err != nil {
+		t.Fatalf("read file: %v", err)
+	}
+	content := string(data)
+	if !strings.Contains(content, "todos: {}") {
+		t.Fatalf("expected empty todos map, got: %s", content)
+	}
+	if !strings.Contains(content, "edges:\n  []") {
+		t.Fatalf("expected empty edges list, got: %s", content)
 	}
 }
