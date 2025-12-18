@@ -146,6 +146,40 @@ func TestScanParsesDependsAndBlocksLists(t *testing.T) {
 	}
 }
 
+func TestScanMetadataStopsAtNextTODO(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, dir, "a.go", `// TODO:[#a]
+// depends-on: #b
+// TODO:[#c]
+// depends-on: #d
+`)
+
+	g, errs, err := Scan(dir)
+	if err != nil {
+		t.Fatalf("scan error: %v", err)
+	}
+	if len(errs) != 0 {
+		t.Fatalf("unexpected scan errors: %+v", errs)
+	}
+	want := map[string]bool{
+		"b->a": true,
+		"d->c": true,
+	}
+	if len(g.Edges) != len(want) {
+		t.Fatalf("expected %d edges, got %d", len(want), len(g.Edges))
+	}
+	for _, e := range g.Edges {
+		key := e.From + "->" + e.To
+		if !want[key] {
+			t.Fatalf("unexpected edge: %+v", e)
+		}
+		delete(want, key)
+	}
+	if len(want) != 0 {
+		t.Fatalf("missing edges: %+v", want)
+	}
+}
+
 func TestScanRejectsMetadataWithoutHash(t *testing.T) {
 	dir := t.TempDir()
 	writeFile(t, dir, "a.go", `// TODO:[#a]
