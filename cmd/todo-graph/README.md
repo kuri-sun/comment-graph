@@ -18,8 +18,14 @@
 ### TODO syntax
 
 ```ts
-// TODO:[#id] short description
-// DEPS: #other-id, #another
+// TODO: short description
+// @todo-id some-id
+// @todo-deps dep-a, dep-b
 ```
 
-IDs must be lowercase letters/digits/hyphens/underscores. If no `[#id]` is provided, an ID like `todo-<line>` is generated. Only `DEPS` is parsed; values must be comma-separated, each prefixed with `#`. Multiple TODOs can appear in block or inline comments across languages (Go/TS/JS/HTML/triple-quote blocks).
+Rules:
+- TODO must start on a comment line (not inline after code).
+- Metadata must immediately follow the TODO; only `@todo-id` (required) and `@todo-deps` are allowed.
+- IDs must be lowercase letters/digits/hyphens/underscores. Missing `@todo-id` is an error.
+- `@todo-deps` is comma-separated; `#` is optional. Space-separated deps error.
+- TODOs and metadata are recognized in line-start comments and block comments that start at the beginning of a line (Go/TS/JS/HTML/triple-quote blocks).

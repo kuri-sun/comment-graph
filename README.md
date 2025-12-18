@@ -12,24 +12,24 @@ A small CLI that scans your codebase for `TODO` comments, builds a dependency gr
 
 ```ts
 // user.ts
+// TODO: database migration
+// @todo-id db-migration
 
-// TODO:[#db-migration] database migration
-function getUser() {
-```
-
-```ts
 // cache.ts
-
-// TODO: cache-user add cache layer for user reads
-// DEPS: #db-migration
-function cacheUser() {
+// TODO: add cache layer for user reads
+// @todo-id cache-user
+// @todo-deps db-migration
 ```
 
 Then run:
 
 ```
+todo-graph generate   # validates + writes .todo-graph
 todo-graph visualize  # shows a tree of the graph
 ```
 
-IDs must use lowercase letters/digits/hyphens/underscores. If no `[#id]` is provided, an ID like `todo-<line>` is generated.
-Only `DEPS` metadata is parsed (one or more IDs, comma-separated, each prefixed with `#`).
+Rules:
+- TODO must start on a comment line (not inline after code).
+- Metadata must immediately follow the TODO (no blank/non-comment lines); only `@todo-id` and `@todo-deps` are allowed.
+- IDs must use lowercase letters/digits/hyphens/underscores. Missing `@todo-id` is an error.
+- `@todo-deps` is comma-separated; `#` is optional.
