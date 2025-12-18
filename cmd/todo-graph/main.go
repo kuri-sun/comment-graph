@@ -115,6 +115,7 @@ func runCheck(p printer) int {
 		}
 		fmt.Fprintln(os.Stderr)
 		p.warnLine("Fix scan issues and re-run `todo-graph check`.")
+		fmt.Fprintln(os.Stderr)
 		return 3
 	}
 	if len(report.UndefinedEdges) > 0 {
@@ -123,6 +124,7 @@ func runCheck(p printer) int {
 		for _, e := range report.UndefinedEdges {
 			fmt.Fprintf(os.Stderr, "  - undefined TODO reference: %s -> %s\n", e.From, e.To)
 		}
+		fmt.Fprintln(os.Stderr)
 		return 1
 	}
 	if len(report.Cycles) > 0 {
@@ -132,6 +134,7 @@ func runCheck(p printer) int {
 		for _, c := range report.Cycles {
 			fmt.Fprintf(os.Stderr, "    cycle: %s\n", strings.Join(c, " -> "))
 		}
+		fmt.Fprintln(os.Stderr)
 		return 2
 	}
 	fileGraph, err := engine.ReadGraph(root)
@@ -139,6 +142,7 @@ func runCheck(p printer) int {
 		printFailureHeader()
 		printErrorsSection()
 		fmt.Fprintf(os.Stderr, "  - failed to read .todo-graph (run todo-graph generate): %v\n", err)
+		fmt.Fprintln(os.Stderr)
 		return 3
 	}
 
@@ -156,6 +160,7 @@ func runCheck(p printer) int {
 		mismatch = true
 	}
 	if mismatch {
+		fmt.Fprintln(os.Stderr)
 		return 3
 	}
 
