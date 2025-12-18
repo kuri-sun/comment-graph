@@ -164,6 +164,28 @@ func TestScanRejectsMetadataWithoutHash(t *testing.T) {
 	}
 }
 
+func TestScanUnknownMetadataKeyIgnored(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, dir, "a.go", `// TODO:[#a]
+// owner: someone
+// status: todo
+`)
+
+	g, errs, err := Scan(dir)
+	if err != nil {
+		t.Fatalf("scan error: %v", err)
+	}
+	if len(errs) != 0 {
+		t.Fatalf("unexpected scan errors: %+v", errs)
+	}
+	if len(g.Edges) != 0 {
+		t.Fatalf("expected 0 edges, got %d", len(g.Edges))
+	}
+	if len(g.Todos) != 1 {
+		t.Fatalf("expected 1 todo, got %d", len(g.Todos))
+	}
+}
+
 func writeFile(t *testing.T, dir, name, content string) {
 	t.Helper()
 	path := filepath.Join(dir, name)
