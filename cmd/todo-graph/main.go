@@ -99,22 +99,6 @@ func runCheck(p printer) int {
 		p.section("Errors")
 	}
 
-	describeUndefinedEdge := func(e graph.Edge, todos map[string]graph.Todo) string {
-		fromTodo, fromOK := todos[e.From]
-		toTodo, toOK := todos[e.To]
-
-		switch {
-		case !fromOK && toOK:
-			return fmt.Sprintf("missing %q (at %s:%d)", e.From, toTodo.File, toTodo.Line)
-		case fromOK && !toOK:
-			return fmt.Sprintf("missing %q (at %s:%d)", e.To, fromTodo.File, fromTodo.Line)
-		case !fromOK && !toOK:
-			return fmt.Sprintf("missing TODOs %q and %q (edge present but ids undefined)", e.From, e.To)
-		default:
-			return fmt.Sprintf("undefined TODO reference: %s -> %s", e.From, e.To)
-		}
-	}
-
 	fileGraph, err := engine.ReadGraph(root)
 	if err != nil {
 		printFailureHeader()

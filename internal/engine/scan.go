@@ -15,8 +15,10 @@ import (
 var (
 	todoLinePattern = regexp.MustCompile(`TODO:?\s*(\[#([^\]]*)\])?(.*)`)
 	todoIDPattern   = regexp.MustCompile(`^[a-z0-9_-]+$`)
-	commentLine     = regexp.MustCompile(`^\s*(//|#|--|/\\*|\\*|<!--)`)
+	commentLine     = regexp.MustCompile(`^\s*(//|#|--|/\*|\*|<!--)`)
 )
+
+var commentClosers = []string{"*/", "-->", `"""`, `'''`}
 
 type blockComment struct {
 	start string
@@ -99,6 +101,53 @@ func shouldSkipDir(name string) bool {
 	}
 }
 
+func commentFlags(lines []string) []bool {
+	var flags []bool
+	inBlock := false
+	var blockEnd string
+	blockComments := []blockComment{
+		{start: "/*", end: "*/"},
+		{start: "<!--", end: "-->"},
+		{start: `"""`, end: `"""`},
+		{start: `'''`, end: `'''`},
+	}
+
+	for _, line := range lines {
+		comment := false
+
+		if inBlock {
+			comment = true
+			if blockEnd != "" && strings.Contains(line, blockEnd) {
+				inBlock = false
+				blockEnd = ""
+			}
+		}
+
+		if !comment {
+			if strings.Contains(line, "//") || strings.Contains(line, "#") || strings.Contains(line, "--") {
+				comment = true
+			}
+		}
+
+		if !comment {
+			for _, bc := range blockComments {
+				if idx := strings.Index(line, bc.start); idx != -1 {
+					comment = true
+					if strings.Index(line[idx+len(bc.start):], bc.end) == -1 {
+						inBlock = true
+						blockEnd = bc.end
+					}
+					break
+				}
+			}
+		}
+
+		flags = append(flags, comment)
+	}
+
+	return flags
+}
+
 func scanFile(path, rel string) ([]graph.Edge, []graph.Todo, []ScanError, error) {
 	content, err := os.ReadFile(path)
 	if err != nil {
@@ -114,65 +163,12 @@ func scanFile(path, rel string) ([]graph.Edge, []graph.Todo, []ScanError, error)
 	var todos []graph.Todo
 	var errs []ScanError
 
-	blockComments := []blockComment{
-		{start: "/*", end: "*/"},
-		{start: "<!--", end: "-->"},
-		{start: `"""`, end: `"""`},
-		{start: `'''`, end: `'''`},
-	}
-	inBlock := false
-	var currentBlockEnd string
+	comments := commentFlags(lines)
 
 	for i := 0; i < len(lines); i++ {
 		line := lines[i]
-		trimmed := strings.TrimSpace(line)
 
-		// determine if this line is in a comment
-		comment := false
-		if inBlock {
-			comment = true
-			if strings.Contains(line, currentBlockEnd) {
-				inBlock = false
-				currentBlockEnd = ""
-			}
-		}
-		if !comment {
-			// inline single-line markers anywhere
-			if idx := strings.Index(line, "//"); idx != -1 {
-				comment = true
-			}
-			if idx := strings.Index(line, "#"); !comment && idx != -1 {
-				comment = true
-			}
-			if idx := strings.Index(line, "--"); !comment && idx != -1 {
-				comment = true
-			}
-		}
-		if !comment {
-			for _, bc := range blockComments {
-				if idx := strings.Index(line, bc.start); idx != -1 {
-					comment = true
-					after := line[idx+len(bc.start):]
-					if strings.Index(after, bc.end) == -1 {
-						// look ahead to see if an end exists
-						foundEnd := false
-						for j := i + 1; j < len(lines); j++ {
-							if strings.Contains(lines[j], bc.end) {
-								foundEnd = true
-								break
-							}
-						}
-						if foundEnd {
-							inBlock = true
-							currentBlockEnd = bc.end
-						}
-					}
-					break
-				}
-			}
-		}
-
-		if !comment {
+		if i >= len(comments) || !comments[i] {
 			continue
 		}
 
@@ -210,7 +206,11 @@ func scanFile(path, rel string) ([]graph.Edge, []graph.Todo, []ScanError, error)
 			Line: i + 1,
 		}
 
-		depends, _, metaErrs, endIdx := parseMetadata(lines, i+1, rel)
+		inlineDeps, inlineErrs := parseInlineDeps(desc, rel, i+1)
+		errs = append(errs, inlineErrs...)
+
+		depends, _, metaErrs, endIdx := parseMetadata(lines, comments, i+1, rel)
+		depends = append(depends, inlineDeps...)
 		errs = append(errs, metaErrs...)
 
 		for _, dep := range depends {
@@ -224,7 +224,7 @@ func scanFile(path, rel string) ([]graph.Edge, []graph.Todo, []ScanError, error)
 	return edges, todos, errs, nil
 }
 
-func parseMetadata(lines []string, start int, file string) (depends []string, blocks []string, errs []ScanError, end int) {
+func parseMetadata(lines []string, comments []bool, start int, file string) (depends []string, blocks []string, errs []ScanError, end int) {
 	end = start - 1
 	for idx := start; idx < len(lines); idx++ {
 		line := lines[idx]
@@ -232,7 +232,7 @@ func parseMetadata(lines []string, start int, file string) (depends []string, bl
 			end = idx - 1
 			return
 		}
-		if !commentLine.MatchString(line) {
+		if idx >= len(comments) || !comments[idx] {
 			end = idx - 1
 			return
 		}
@@ -259,7 +259,7 @@ func parseKeyValue(line string) (key string, value string) {
 		return "", ""
 	}
 	key = strings.ToLower(strings.TrimSpace(trimmed[:colon]))
-	value = strings.TrimSpace(trimmed[colon+1:])
+	value = cleanCommentSuffix(strings.TrimSpace(trimmed[colon+1:]))
 	return
 }
 
@@ -267,7 +267,7 @@ func parseIDs(raw string, line int, file string) ([]string, []ScanError) {
 	if raw == "" {
 		return nil, nil
 	}
-	trimmed := strings.TrimSpace(raw)
+	trimmed := strings.TrimSpace(cleanCommentSuffix(raw))
 	if trimmed == "" {
 		return nil, nil
 	}
@@ -311,6 +311,28 @@ func parseIDs(raw string, line int, file string) ([]string, []ScanError) {
 		ids = append(ids, p)
 	}
 	return ids, errs
+}
+
+func cleanCommentSuffix(s string) string {
+	s = strings.TrimSpace(s)
+	for _, c := range commentClosers {
+		s = strings.TrimSuffix(s, c)
+	}
+	return strings.TrimSpace(s)
+}
+
+func parseInlineDeps(desc, file string, line int) ([]string, []ScanError) {
+	desc = strings.TrimSpace(cleanCommentSuffix(desc))
+	if desc == "" {
+		return nil, nil
+	}
+	lower := strings.ToLower(desc)
+	idx := strings.Index(lower, "deps:")
+	if idx == -1 {
+		return nil, nil
+	}
+	raw := desc[idx+len("deps:"):]
+	return parseIDs(raw, line, file)
 }
 
 func dedupeEdges(edges []graph.Edge) []graph.Edge {
