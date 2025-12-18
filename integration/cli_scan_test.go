@@ -62,6 +62,31 @@ func TestCLICheckDetectsCycle(t *testing.T) {
 	}
 }
 
+func TestCLICheckDetectsDrift(t *testing.T) {
+	tmp := t.TempDir()
+	copyFixtureFile(t, "index.ts", tmp)
+	copyFixtureFile(t, "user.ts", tmp)
+
+	bin := buildCLI(t)
+	runCmd(t, bin, tmp, "scan")
+
+	// mutate .todo-graph to introduce drift
+	path := filepath.Join(tmp, ".todo-graph")
+	contents := readFile(t, path)
+	contents = strings.Replace(contents, "cleanup-legacy", "cleanup-legacy-changed", 1)
+	if err := os.WriteFile(path, []byte(contents), 0o644); err != nil {
+		t.Fatalf("mutate .todo-graph: %v", err)
+	}
+
+	code, out := runCmdExpectExit(t, bin, tmp, 3, "check")
+	if code != 3 {
+		t.Fatalf("expected exit 3, got %d\nout:\n%s", code, out)
+	}
+	if !strings.Contains(out, ".todo-graph is out of date") {
+		t.Fatalf("expected drift output, got:\n%s", out)
+	}
+}
+
 func readFile(t *testing.T, path string) string {
 	t.Helper()
 	data, err := os.ReadFile(path)
