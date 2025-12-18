@@ -105,6 +105,22 @@ func runCheck(p printer) int {
 		p.section("Errors")
 	}
 
+	describeUndefinedEdge := func(e graph.Edge, todos map[string]graph.Todo) string {
+		fromTodo, fromOK := todos[e.From]
+		toTodo, toOK := todos[e.To]
+
+		switch {
+		case !fromOK && toOK:
+			return fmt.Sprintf("missing TODO %q (referenced by %q at %s:%d)", e.From, e.To, toTodo.File, toTodo.Line)
+		case fromOK && !toOK:
+			return fmt.Sprintf("missing TODO %q (referenced by %q at %s:%d)", e.To, e.From, fromTodo.File, fromTodo.Line)
+		case !fromOK && !toOK:
+			return fmt.Sprintf("missing TODOs %q and %q (edge present but ids undefined)", e.From, e.To)
+		default:
+			return fmt.Sprintf("undefined TODO reference: %s -> %s", e.From, e.To)
+		}
+	}
+
 	report := engine.ValidateGraph(scanned, scanErrs)
 	if len(report.ScanErrors) > 0 {
 		printFailureHeader()
@@ -121,7 +137,7 @@ func runCheck(p printer) int {
 		printFailureHeader()
 		printErrorsSection()
 		for _, e := range report.UndefinedEdges {
-			fmt.Fprintf(os.Stderr, "  - undefined TODO reference: %s -> %s\n", e.From, e.To)
+			fmt.Fprintf(os.Stderr, "  - %s\n", describeUndefinedEdge(e, scanned.Todos))
 		}
 		fmt.Fprintln(os.Stderr)
 		return 1
