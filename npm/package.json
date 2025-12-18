@@ -1,0 +1,24 @@
+{
+  "name": "todo-graph",
+  "version": "0.1.0",
+  "description": "CLI wrapper for todo-graph with binary downloader",
+  "bin": {
+    "todo-graph": "./bin/todo-graph.js"
+  },
+  "scripts": {
+    "postinstall": "node ./scripts/postinstall.js"
+  },
+  "files": [
+    "bin",
+    "scripts",
+    "README.md"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/todo-graph/todo-graph.git"
+  },
+  "engines": {
+    "node": ">=16"
+  }
+}

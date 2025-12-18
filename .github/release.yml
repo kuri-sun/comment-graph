@@ -1,0 +1,7 @@
+changelog:
+  categories:
+    - title: Changes
+      labels:
+        - "*"
+  exclude:
+    labels: []
