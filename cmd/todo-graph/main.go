@@ -89,7 +89,7 @@ func runScan(p printer, showTree bool) int {
 		fmt.Println()
 		p.section("TODO Graph")
 		for _, line := range renderTree(graph) {
-			fmt.Println(line)
+			fmt.Println("  " + line)
 		}
 	} else if roots := findRoots(graph); len(roots) > 0 {
 		fmt.Println()
