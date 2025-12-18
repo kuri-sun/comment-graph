@@ -11,14 +11,14 @@ A small CLI that scans your codebase for `TODO` comments, builds a dependency gr
 
 Run commands in the repository you want to scan:
 
-- `todo-graph scan` — scan for TODOs and write `.todo-graph` (root TODOs are shown; add `--full`/`-f` for the indented tree).
+- `todo-graph scan` — scan for TODOs and write `.todo-graph`.
 - `todo-graph check` — validate TODO references, detect cycles/isolated nodes, and ensure `.todo-graph` matches source.
-- `todo-graph visualize --format mermaid` — print the graph in Mermaid format.
+- `todo-graph visualize` — read `.todo-graph` and print an indented tree of the TODO graph.
 
 ### TODO syntax (quick start)
 
 ```
-// TODO:[#id] short description
+// TODO[#id] short description
 // depends-on: #other-id
 ```
 

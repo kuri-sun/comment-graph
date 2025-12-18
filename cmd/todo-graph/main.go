@@ -24,17 +24,11 @@ func main() {
 	cmd := os.Args[1]
 	switch cmd {
 	case "scan":
-		showTree := false
-		for _, arg := range os.Args[2:] {
-			switch arg {
-			case "--full", "-f":
-				showTree = true
-			default:
-				fmt.Fprintf(os.Stderr, "unknown flag for scan: %s\n", arg)
-				os.Exit(1)
-			}
+		if len(os.Args) > 2 {
+			fmt.Fprintf(os.Stderr, "unknown flag for scan: %s\n", strings.Join(os.Args[2:], " "))
+			os.Exit(1)
 		}
-		os.Exit(runScan(p, showTree))
+		os.Exit(runScan(p))
 	case "check":
 		os.Exit(runCheck(p))
 	case "visualize":
@@ -48,7 +42,7 @@ func main() {
 	}
 }
 
-func runScan(p printer, showTree bool) int {
+func runScan(p printer) int {
 	root, err := currentRoot()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to resolve working directory: %v\n", err)
@@ -84,24 +78,6 @@ func runScan(p printer, showTree bool) int {
 	p.resultLine(true)
 	p.infof("todos : %d", len(graph.Todos))
 	p.infof("genereated: %s", filepath.Join(root, ".todo-graph"))
-
-	if showTree {
-		fmt.Println()
-		p.section("TODO Graph")
-		for _, line := range renderTree(graph) {
-			fmt.Println("  " + line)
-		}
-	} else if roots := findRoots(graph); len(roots) > 0 {
-		fmt.Println()
-		p.section("TODO Graph")
-		for _, id := range roots {
-			if t, ok := graph.Todos[id]; ok {
-				fmt.Printf("  - [] %s (%s:%d)\n", id, t.File, t.Line)
-			} else {
-				fmt.Printf("  - [] %s\n", id)
-			}
-		}
-	}
 	return 0
 }
 
@@ -177,12 +153,8 @@ func runCheck(p printer) int {
 }
 
 func runVisualize(args []string) int {
-	format := "mermaid"
-	if len(args) >= 2 && args[0] == "--format" {
-		format = args[1]
-	}
-	if format != "mermaid" {
-		fmt.Fprintf(os.Stderr, "unsupported format: %s\n", format)
+	if len(args) > 0 {
+		fmt.Fprintln(os.Stderr, "visualize no longer accepts format flags; mermaid output was removed")
 		return 1
 	}
 
@@ -198,8 +170,12 @@ func runVisualize(args []string) int {
 		return 1
 	}
 
-	out := engine.RenderMermaid(g)
-	fmt.Println(out)
+	p := newPrinter()
+	fmt.Println()
+	p.section("TODO Graph")
+	for _, line := range renderTree(g) {
+		fmt.Println("  " + line)
+	}
 	return 0
 }
 
@@ -285,7 +261,6 @@ func printHelp() {
 	fmt.Println()
 	fmt.Println("Usage:")
 	fmt.Println("  todo-graph scan         Scan repository and update .todo-graph")
-	fmt.Println("      --full, -f          Print full tree view of graph")
 	fmt.Println("  todo-graph check        Validate TODO graph consistency")
-	fmt.Println("  todo-graph visualize    Output graph in a given format")
+	fmt.Println("  todo-graph visualize    Show the graph as an indented tree")
 }

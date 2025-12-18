@@ -11,21 +11,21 @@ import (
 // Integration: run `todo-graph scan` end-to-end against a temp TS repo with cross-file deps.
 func TestCLIScanWritesTodoGraph(t *testing.T) {
 	tmp := t.TempDir()
-	copyFixtureFile(t, "index.ts", tmp)
-	copyFixtureFile(t, "user.ts", tmp)
+	copyFixtureFile(t, filepath.Join("sample", "index.ts"), tmp)
+	copyFixtureFile(t, filepath.Join("sample", "users.ts"), tmp)
 
 	bin := buildCLI(t)
 	runCmd(t, bin, tmp, "scan")
 
 	got := readFile(t, filepath.Join(tmp, ".todo-graph"))
-	if !strings.Contains(got, "\n  cache-user:\n") || !strings.Contains(got, "\n  db-migration:\n") || !strings.Contains(got, "\n  cleanup-legacy:\n") {
+	if !strings.Contains(got, "\n  cache-sample:\n") || !strings.Contains(got, "\n  db-sample:\n") || !strings.Contains(got, "\n  cleanup-sample:\n") {
 		t.Fatalf("unexpected todos section:\n%s", got)
 	}
-	if !strings.Contains(got, "from: \"db-migration\"\n    to: \"cache-user\"") {
-		t.Fatalf("expected edge db-migration->cache-user, got:\n%s", got)
+	if !strings.Contains(got, "from: \"db-sample\"\n    to: \"cache-sample\"") {
+		t.Fatalf("expected edge db-sample->cache-sample, got:\n%s", got)
 	}
-	if !strings.Contains(got, "from: \"cache-user\"\n    to: \"cleanup-legacy\"") {
-		t.Fatalf("expected edge cache-user->cleanup-legacy, got:\n%s", got)
+	if !strings.Contains(got, "from: \"cache-sample\"\n    to: \"cleanup-sample\"") {
+		t.Fatalf("expected edge cache-sample->cleanup-sample, got:\n%s", got)
 	}
 }
 
@@ -67,8 +67,8 @@ func TestCLICheckDetectsCycle(t *testing.T) {
 // Integration: `check` should fail with exit 3 when .todo-graph drifts from code.
 func TestCLICheckDetectsDrift(t *testing.T) {
 	tmp := t.TempDir()
-	copyFixtureFile(t, "index.ts", tmp)
-	copyFixtureFile(t, "user.ts", tmp)
+	copyFixtureFile(t, filepath.Join("sample", "index.ts"), tmp)
+	copyFixtureFile(t, filepath.Join("sample", "users.ts"), tmp)
 
 	bin := buildCLI(t)
 	runCmd(t, bin, tmp, "scan")
@@ -110,21 +110,21 @@ func TestCLICheckDetectsIsolated(t *testing.T) {
 // Integration: visualize should emit mermaid with the discovered edges.
 func TestCLIVisualizeOutputsMermaid(t *testing.T) {
 	tmp := t.TempDir()
-	copyFixtureFile(t, "index.ts", tmp)
-	copyFixtureFile(t, "user.ts", tmp)
+	copyFixtureFile(t, filepath.Join("sample", "index.ts"), tmp)
+	copyFixtureFile(t, filepath.Join("sample", "users.ts"), tmp)
 
 	bin := buildCLI(t)
 	runCmd(t, bin, tmp, "scan")
 
-	code, out := runCmdExpectExit(t, bin, tmp, 0, "visualize", "--format", "mermaid")
+	code, out := runCmdExpectExit(t, bin, tmp, 0, "visualize")
 	if code != 0 {
 		t.Fatalf("expected exit 0, got %d\nout:\n%s", code, out)
 	}
-	if !strings.Contains(out, "graph TD") {
-		t.Fatalf("expected mermaid header, got:\n%s", out)
+	if !strings.Contains(out, "> TODO Graph") {
+		t.Fatalf("expected TODO Graph header, got:\n%s", out)
 	}
-	if !strings.Contains(out, "db-migration --> cache-user") || !strings.Contains(out, "cache-user --> cleanup-legacy") {
-		t.Fatalf("expected edges in mermaid output, got:\n%s", out)
+	if !strings.Contains(out, "- [] db-sample") || !strings.Contains(out, "- [] cache-sample") || !strings.Contains(out, "- [] cleanup-sample") {
+		t.Fatalf("expected tree nodes in output, got:\n%s", out)
 	}
 }
 
