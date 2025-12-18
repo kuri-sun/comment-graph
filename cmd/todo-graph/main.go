@@ -107,9 +107,11 @@ func runCheck(p printer) int {
 		return 3
 	}
 	if len(report.UndefinedEdges) > 0 {
-		p.sectionErr("Undefined TODO references")
+		fmt.Fprintln(os.Stderr)
+		p.section("Check completed")
+		p.sectionErrRed("Errors")
 		for _, e := range report.UndefinedEdges {
-			fmt.Fprintf(os.Stderr, "undefined TODO reference: %s -> %s\n", e.From, e.To)
+			fmt.Fprintf(os.Stderr, "  - undefined TODO reference: %s -> %s\n", e.From, e.To)
 		}
 		p.resultLine(false)
 		return 1
