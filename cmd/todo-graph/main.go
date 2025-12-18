@@ -76,8 +76,10 @@ func runScan(p printer) int {
 	fmt.Println()
 	p.section("Scan complete")
 	p.resultLine(true)
-	p.infof("todos : %d", len(graph.Todos))
-	p.infof("genereated: %s", filepath.Join(root, ".todo-graph"))
+	roots := findRoots(graph)
+	p.infof("root TODOs : %d", len(roots))
+	p.infof("total TODOs: %d", len(graph.Todos))
+	p.infof("generated : %s", filepath.Join(root, ".todo-graph"))
 	return 0
 }
 
