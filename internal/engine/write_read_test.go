@@ -22,7 +22,7 @@ func TestWriteReadGraphRoundTrip(t *testing.T) {
 		},
 	}
 
-	if err := WriteGraph(dir, g); err != nil {
+	if err := WriteGraph(dir, "", g); err != nil {
 		t.Fatalf("write graph: %v", err)
 	}
 	if _, err := os.Stat(filepath.Join(dir, ".todo-graph")); err != nil {
@@ -45,7 +45,7 @@ func TestWriteGraphEmptyFormatsSections(t *testing.T) {
 		Edges: nil,
 	}
 
-	if err := WriteGraph(dir, g); err != nil {
+	if err := WriteGraph(dir, "", g); err != nil {
 		t.Fatalf("write graph: %v", err)
 	}
 	data, err := os.ReadFile(filepath.Join(dir, ".todo-graph"))
@@ -59,4 +59,41 @@ func TestWriteGraphEmptyFormatsSections(t *testing.T) {
 	if !strings.Contains(content, "edges:\n  []") {
 		t.Fatalf("expected empty edges list, got: %s", content)
 	}
+}
+
+func TestWriteGraphCustomPath(t *testing.T) {
+	dir := t.TempDir()
+	output := filepath.Join(dir, "artifacts", "custom.todo-graph")
+
+	g := graph.Graph{
+		Todos: map[string]graph.Todo{
+			"custom": {ID: "custom", File: "a.go", Line: 1},
+		},
+		Edges: nil,
+	}
+
+	if err := WriteGraph(dir, output, g); err != nil {
+		t.Fatalf("write graph: %v", err)
+	}
+	if _, err := os.Stat(output); err != nil {
+		t.Fatalf("expected custom output path to exist: %v", err)
+	}
+	content := readFile(t, output)
+	if !strings.Contains(content, "custom:") {
+		t.Fatalf("expected content to contain todo id, got: %s", content)
+	}
+	if _, err := os.Stat(filepath.Join(dir, ".todo-graph")); err == nil {
+		t.Fatalf("default .todo-graph should not be written when output path is provided")
+	} else if !os.IsNotExist(err) {
+		t.Fatalf("stat default .todo-graph: %v", err)
+	}
+}
+
+func readFile(t *testing.T, path string) string {
+	t.Helper()
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read file: %v", err)
+	}
+	return string(data)
 }

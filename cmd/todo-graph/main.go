@@ -24,11 +24,12 @@ func main() {
 	cmd := os.Args[1]
 	switch cmd {
 	case "generate":
-		if len(os.Args) > 2 {
-			fmt.Fprintf(os.Stderr, "unknown flag for generate: %s\n", strings.Join(os.Args[2:], " "))
+		output, err := parseGenerateFlags(os.Args[2:])
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
-		os.Exit(runGenerate(p))
+		os.Exit(runGenerate(p, output))
 	case "check":
 		os.Exit(runCheck(p))
 	case "visualize":
@@ -42,7 +43,7 @@ func main() {
 	}
 }
 
-func runGenerate(p printer) int {
+func runGenerate(p printer, output string) int {
 	root, err := currentRoot()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to resolve working directory: %v\n", err)
@@ -61,7 +62,7 @@ func runGenerate(p printer) int {
 		return code
 	}
 
-	if err := engine.WriteGraph(root, graph); err != nil {
+	if err := engine.WriteGraph(root, output, graph); err != nil {
 		fmt.Fprintf(os.Stderr, "failed to write .todo-graph: %v\n", err)
 		p.resultLine(false)
 		return 1
@@ -70,7 +71,15 @@ func runGenerate(p printer) int {
 	fmt.Println()
 	p.section("Generate complete")
 	p.resultLine(true)
-	p.infof("generated : %s", filepath.Join(root, ".todo-graph"))
+	target := filepath.Join(root, ".todo-graph")
+	if output != "" {
+		target = output
+		if !filepath.IsAbs(target) {
+			target = filepath.Join(root, output)
+		}
+	}
+	abs, _ := filepath.Abs(target)
+	p.infof("generated : %s", abs)
 	return 0
 }
 
@@ -129,7 +138,7 @@ func runVisualize(args []string) int {
 	}
 
 	p := newPrinter()
-	if code := runGenerate(p); code != 0 {
+	if code := runGenerate(p, ""); code != 0 {
 		return code
 	}
 
@@ -314,11 +323,32 @@ func currentRoot() (string, error) {
 	return filepath.Abs(root)
 }
 
+func parseGenerateFlags(args []string) (string, error) {
+	output := ""
+	for i := 0; i < len(args); i++ {
+		switch args[i] {
+		case "--output":
+			if i+1 >= len(args) {
+				return "", fmt.Errorf("missing value for --output")
+			}
+			if output != "" {
+				return "", fmt.Errorf("duplicate --output flag")
+			}
+			output = args[i+1]
+			i++
+		default:
+			return "", fmt.Errorf("unknown flag for generate: %s", args[i])
+		}
+	}
+	return output, nil
+}
+
 func printHelp() {
 	fmt.Printf("todo-graph CLI (version %s)\n", version)
 	fmt.Println()
 	fmt.Println("Usage:")
 	fmt.Println("  todo-graph generate     Scan repository and write .todo-graph")
+	fmt.Println("      --output <path>     Write .todo-graph to a different path (for CI artifacts)")
 	fmt.Println("  todo-graph check        Validate TODO graph consistency")
 	fmt.Println("  todo-graph visualize    Show the graph as an indented tree")
 }
