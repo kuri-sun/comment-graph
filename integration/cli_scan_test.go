@@ -29,6 +29,22 @@ func TestCLIScanWritesTodoGraph(t *testing.T) {
 	}
 }
 
+func TestCLICheckFailsOnUndefinedReference(t *testing.T) {
+	tmp := t.TempDir()
+	copyFixtureFile(t, filepath.Join("undefined", "index.ts"), tmp)
+
+	bin := buildCLI(t)
+	runCmd(t, bin, tmp, "scan")
+
+	code, out := runCmdExpectExit(t, bin, tmp, 1, "check")
+	if code != 1 {
+		t.Fatalf("expected exit 1, got %d\nout:\n%s", code, out)
+	}
+	if !strings.Contains(out, "undefined TODO reference") {
+		t.Fatalf("expected undefined reference in output, got:\n%s", out)
+	}
+}
+
 func readFile(t *testing.T, path string) string {
 	t.Helper()
 	data, err := os.ReadFile(path)
@@ -70,6 +86,27 @@ func runCmd(t *testing.T, bin, dir string, args ...string) {
 	if err != nil {
 		t.Fatalf("command failed: %v\nout:\n%s", err, string(out))
 	}
+}
+
+func runCmdExpectExit(t *testing.T, bin, dir string, expect int, args ...string) (int, string) {
+	t.Helper()
+	cmd := exec.Command(bin, args...)
+	cmd.Dir = dir
+	cmd.Env = append(os.Environ(), "GOCACHE="+t.TempDir())
+	out, err := cmd.CombinedOutput()
+	if err == nil {
+		if expect == 0 {
+			return 0, string(out)
+		}
+		t.Fatalf("expected exit %d, got 0\nout:\n%s", expect, string(out))
+	}
+	var exitCode int
+	if ee, ok := err.(*exec.ExitError); ok {
+		exitCode = ee.ExitCode()
+	} else {
+		t.Fatalf("command failed: %v\nout:\n%s", err, string(out))
+	}
+	return exitCode, string(out)
 }
 
 func findModuleRoot(t *testing.T) string {
