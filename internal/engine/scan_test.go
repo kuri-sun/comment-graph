@@ -58,24 +58,36 @@ const x = 1
 	}
 }
 
-func TestScanRejectsInvalidIDs(t *testing.T) {
+func TestScanRejectsEmptyID(t *testing.T) {
 	dir := t.TempDir()
 	writeFile(t, dir, "a.go", `// TODO:[#]
-// TODO:[#Bad]
 `)
 
 	_, errs, err := Scan(dir)
 	if err != nil {
 		t.Fatalf("scan error: %v", err)
 	}
-	if len(errs) != 2 {
-		t.Fatalf("expected 2 scan errors, got %d: %+v", len(errs), errs)
+	if len(errs) != 1 {
+		t.Fatalf("expected 1 scan error, got %d: %+v", len(errs), errs)
 	}
-	if !strings.Contains(errs[0].Msg, "must not be empty") && !strings.Contains(errs[1].Msg, "must not be empty") {
+	if !strings.Contains(errs[0].Msg, "must not be empty") {
 		t.Fatalf("expected empty id error, got %+v", errs)
 	}
-	if !strings.Contains(errs[0].Msg, "lowercase letters, digits, hyphens, or underscores") &&
-		!strings.Contains(errs[1].Msg, "lowercase letters, digits, hyphens, or underscores") {
+}
+
+func TestScanRejectsUppercaseID(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, dir, "a.go", `// TODO:[#Bad]
+`)
+
+	_, errs, err := Scan(dir)
+	if err != nil {
+		t.Fatalf("scan error: %v", err)
+	}
+	if len(errs) != 1 {
+		t.Fatalf("expected 1 scan error, got %d: %+v", len(errs), errs)
+	}
+	if !strings.Contains(errs[0].Msg, "lowercase letters, digits, hyphens, or underscores") {
 		t.Fatalf("expected charset error, got %+v", errs)
 	}
 }
