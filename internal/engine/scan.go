@@ -13,9 +13,9 @@ import (
 )
 
 var (
-	todoAnyPattern = regexp.MustCompile(`TODO:?\s*\[#([^\]]*)\]`)
-	todoIDPattern  = regexp.MustCompile(`^[a-z0-9_-]+$`)
-	commentLine    = regexp.MustCompile(`^\s*(//|#)`)
+	todoLinePattern = regexp.MustCompile(`TODO:?\s*(\[#([^\]]*)\])?(.*)`)
+	todoIDPattern   = regexp.MustCompile(`^[a-z0-9_-]+$`)
+	commentLine     = regexp.MustCompile(`^\s*(//|#)`)
 )
 
 // ScanError provides contextual information for parse failures.
@@ -111,15 +111,24 @@ func scanFile(path, rel string) ([]graph.Edge, []graph.Todo, []ScanError, error)
 
 	for i := 0; i < len(lines); i++ {
 		line := lines[i]
-		match := todoAnyPattern.FindStringSubmatch(line)
+		match := todoLinePattern.FindStringSubmatch(line)
 		if match == nil {
 			continue
 		}
 
-		rawID := match[1]
-		if rawID == "" {
+		rawID := match[2]
+		desc := strings.TrimSpace(match[3])
+		if match[1] != "" && rawID == "" {
 			errs = append(errs, ScanError{File: rel, Line: i + 1, Msg: "TODO id must not be empty"})
 			continue
+		}
+		if rawID == "" {
+			derived := deriveID(desc, i+1)
+			if derived == "" {
+				errs = append(errs, ScanError{File: rel, Line: i + 1, Msg: "TODO id must not be empty"})
+				continue
+			}
+			rawID = derived
 		}
 		if !todoIDPattern.MatchString(rawID) {
 			errs = append(errs, ScanError{
@@ -136,14 +145,11 @@ func scanFile(path, rel string) ([]graph.Edge, []graph.Todo, []ScanError, error)
 			Line: i + 1,
 		}
 
-		depends, blocks, metaErrs, endIdx := parseMetadata(lines, i+1, rel)
+		depends, _, metaErrs, endIdx := parseMetadata(lines, i+1, rel)
 		errs = append(errs, metaErrs...)
 
 		for _, dep := range depends {
 			edges = append(edges, graph.Edge{From: dep, To: rawID, Type: "blocks"})
-		}
-		for _, blk := range blocks {
-			edges = append(edges, graph.Edge{From: rawID, To: blk, Type: "blocks"})
 		}
 
 		todos = append(todos, todo)
@@ -157,7 +163,7 @@ func parseMetadata(lines []string, start int, file string) (depends []string, bl
 	end = start - 1
 	for idx := start; idx < len(lines); idx++ {
 		line := lines[idx]
-		if todoAnyPattern.MatchString(line) {
+		if todoLinePattern.MatchString(line) {
 			end = idx - 1
 			return
 		}
@@ -172,10 +178,6 @@ func parseMetadata(lines []string, start int, file string) (depends []string, bl
 			ids, idErrs := parseIDs(values, idx+1, file)
 			errs = append(errs, idErrs...)
 			depends = append(depends, ids...)
-		case "blocks":
-			ids, idErrs := parseIDs(values, idx+1, file)
-			errs = append(errs, idErrs...)
-			blocks = append(blocks, ids...)
 		default:
 			// ignore unknown keys
 		}
@@ -257,4 +259,39 @@ func isBinary(content []byte) bool {
 		}
 	}
 	return false
+}
+
+func deriveID(desc string, line int) string {
+	desc = strings.TrimSpace(desc)
+	if desc == "" {
+		return fmt.Sprintf("todo-%d", line)
+	}
+	for _, field := range strings.Fields(desc) {
+		id := slugify(field)
+		if todoIDPattern.MatchString(id) && id != "" {
+			return id
+		}
+	}
+	id := slugify(desc)
+	if id == "" {
+		return fmt.Sprintf("todo-%d", line)
+	}
+	return id
+}
+
+func slugify(s string) string {
+	var b strings.Builder
+	lastDash := false
+	for _, r := range strings.ToLower(s) {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '_' {
+			b.WriteRune(r)
+			lastDash = false
+		} else {
+			if !lastDash {
+				b.WriteRune('-')
+				lastDash = true
+			}
+		}
+	}
+	return strings.Trim(b.String(), "-")
 }

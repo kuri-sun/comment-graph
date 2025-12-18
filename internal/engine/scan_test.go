@@ -115,7 +115,6 @@ func TestScanParsesDependsAndBlocksLists(t *testing.T) {
 	dir := t.TempDir()
 	writeFile(t, dir, "a.go", `// TODO:[#a]
 // depends-on: #b, #c
-// blocks: #d #e
 `)
 
 	g, errs, err := Scan(dir)
@@ -125,14 +124,12 @@ func TestScanParsesDependsAndBlocksLists(t *testing.T) {
 	if len(errs) != 0 {
 		t.Fatalf("unexpected scan errors: %+v", errs)
 	}
-	if len(g.Edges) != 4 {
-		t.Fatalf("expected 4 edges, got %d", len(g.Edges))
+	if len(g.Edges) != 2 {
+		t.Fatalf("expected 2 edges, got %d", len(g.Edges))
 	}
 	want := map[string]bool{
 		"b->a": true,
 		"c->a": true,
-		"a->d": true,
-		"a->e": true,
 	}
 	for _, e := range g.Edges {
 		key := e.From + "->" + e.To
@@ -217,6 +214,26 @@ func TestScanUnknownMetadataKeyIgnored(t *testing.T) {
 	}
 	if len(g.Todos) != 1 {
 		t.Fatalf("expected 1 todo, got %d", len(g.Todos))
+	}
+}
+
+func TestScanDerivesIDWhenMissing(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, dir, "a.go", `// TODO: cache-user add cache layer
+`)
+
+	g, errs, err := Scan(dir)
+	if err != nil {
+		t.Fatalf("scan error: %v", err)
+	}
+	if len(errs) != 0 {
+		t.Fatalf("unexpected scan errors: %+v", errs)
+	}
+	if len(g.Todos) != 1 {
+		t.Fatalf("expected 1 todo, got %d", len(g.Todos))
+	}
+	if _, ok := g.Todos["cache-user"]; !ok {
+		t.Fatalf("expected derived id cache-user, got %+v", g.Todos)
 	}
 }
 

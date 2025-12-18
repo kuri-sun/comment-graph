@@ -15,22 +15,23 @@ So `todo-graph` only tracks relationships—no status, no owner, no progress.
 ## TODO syntax
 
 ```txt
-TODO:[#id]   // or TODO[#id]
+TODO:[#id]   // or TODO[#id]   // or TODO: cache-user implement cache
 ```
 
-- ID regex: `[a-z0-9_-]+` (leading `#` required)
-- Example: `// TODO:[#cache-user] Implement user cache`
+- ID regex: `[a-z0-9_-]+`.
+- If you omit `[#id]`, an ID is derived from the description (slugged, lowercase).
+- Example: `// TODO:[#cache-user] Implement user cache` or `// TODO: cache-user implement user cache`
 
 Optional metadata (only dependencies are used):
 
 ```txt
-// TODO:[#cache-user]
+// TODO: cache-user implement user cache
 // depends-on: #db-migration
-// blocks: #legacy-cleanup
 ```
 
 - Unknown keys are ignored.
 - `status` / `owner` are out of scope.
+  `blocks` is not parsed in MVP (only `depends-on` is supported).
 
 ### TODO block boundary
 
@@ -72,7 +73,7 @@ Only dependencies are stored; TODO state or owners are never recorded.
 
 ## Edge cases.
 
-- `TODO:` without `[#id]` is ignored.
+- `TODO:` without `[#id]` → ID is derived from description.
 - Empty ID (`TODO:[#]`) → error.
 - Duplicate IDs → error.
 - Unknown metadata keys → ignored.
