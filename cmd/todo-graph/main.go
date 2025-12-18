@@ -94,61 +94,68 @@ func runCheck(p printer) int {
 		return 3
 	}
 
-	printErrorHeader := func() {
+	printFailureHeader := func() {
 		fmt.Fprintln(os.Stderr)
 		p.section("Check completed")
-		p.sectionErrRed("Errors")
+		p.resultLine(false)
+	}
+
+	printErrorsSection := func() {
+		fmt.Fprintln(os.Stderr)
+		p.section("Errors")
+		fmt.Fprintln(os.Stderr)
 	}
 
 	report := engine.ValidateGraph(scanned, scanErrs)
 	if len(report.ScanErrors) > 0 {
-		printErrorHeader()
+		printFailureHeader()
+		printErrorsSection()
 		for _, e := range report.ScanErrors {
 			fmt.Fprintf(os.Stderr, "  - %s:%d: %s\n", e.File, e.Line, e.Msg)
 		}
 		fmt.Fprintln(os.Stderr)
 		p.warnLine("Fix scan issues and re-run `todo-graph check`.")
-		p.resultLine(false)
 		return 3
 	}
 	if len(report.UndefinedEdges) > 0 {
-		printErrorHeader()
+		printFailureHeader()
+		printErrorsSection()
 		for _, e := range report.UndefinedEdges {
 			fmt.Fprintf(os.Stderr, "  - undefined TODO reference: %s -> %s\n", e.From, e.To)
 		}
-		p.resultLine(false)
 		return 1
 	}
 	if len(report.Cycles) > 0 {
-		printErrorHeader()
+		printFailureHeader()
+		printErrorsSection()
 		fmt.Fprintln(os.Stderr, "  - cycles detected:")
 		for _, c := range report.Cycles {
 			fmt.Fprintf(os.Stderr, "    cycle: %s\n", strings.Join(c, " -> "))
 		}
-		p.resultLine(false)
 		return 2
 	}
 	fileGraph, err := engine.ReadGraph(root)
 	if err != nil {
-		printErrorHeader()
+		printFailureHeader()
+		printErrorsSection()
 		fmt.Fprintf(os.Stderr, "  - failed to read .todo-graph (run todo-graph generate): %v\n", err)
-		p.resultLine(false)
 		return 3
 	}
 
 	mismatch := false
 	if len(report.Isolated) > 0 {
-		printErrorHeader()
+		printFailureHeader()
+		printErrorsSection()
 		fmt.Fprintf(os.Stderr, "  - isolated TODOs: %s\n", strings.Join(report.Isolated, ", "))
 		mismatch = true
 	}
 	if !engine.GraphsEqual(scanned, fileGraph) {
-		printErrorHeader()
+		printFailureHeader()
+		printErrorsSection()
 		fmt.Fprintln(os.Stderr, "  - .todo-graph is out of date (run todo-graph generate)")
 		mismatch = true
 	}
 	if mismatch {
-		p.resultLine(false)
 		return 3
 	}
 
