@@ -149,6 +149,9 @@ func runCheck(p printer) int {
 	fmt.Println()
 	p.section("Check complete")
 	p.resultLine(true)
+	roots := findRoots(scanned)
+	p.infof("root TODOs : %d", len(roots))
+	p.infof("total TODOs: %d", len(scanned.Todos))
 	return 0
 }
 
