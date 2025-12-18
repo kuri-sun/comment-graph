@@ -122,6 +122,36 @@ func TestCLIVisualizeOutputsMermaid(t *testing.T) {
 	}
 }
 
+// Integration: --dir should run commands against a different working directory.
+func TestCLIDirFlagTargetsRoot(t *testing.T) {
+	tmp := t.TempDir()
+	copyFixtureFile(t, filepath.Join("sample", "index.ts"), tmp)
+	copyFixtureFile(t, filepath.Join("sample", "users.ts"), tmp)
+
+	bin := buildCLI(t)
+	otherDir := t.TempDir()
+
+	runCmd(t, bin, otherDir, "generate", "--dir", tmp)
+
+	got := readFile(t, filepath.Join(tmp, ".todo-graph"))
+	if !strings.Contains(got, "\n  cache-sample:\n") || !strings.Contains(got, "\n  db-sample:\n") || !strings.Contains(got, "\n  cleanup-sample:\n") {
+		t.Fatalf("unexpected todos section:\n%s", got)
+	}
+
+	code, out := runCmdExpectExit(t, bin, otherDir, 0, "check", "--dir", tmp)
+	if code != 0 {
+		t.Fatalf("expected exit 0, got %d\nout:\n%s", code, out)
+	}
+
+	code, out = runCmdExpectExit(t, bin, otherDir, 0, "visualize", "--dir", tmp)
+	if code != 0 {
+		t.Fatalf("expected exit 0, got %d\nout:\n%s", code, out)
+	}
+	if !strings.Contains(out, "- [] db-sample") || !strings.Contains(out, "- [] cache-sample") || !strings.Contains(out, "- [] cleanup-sample") {
+		t.Fatalf("expected tree nodes in output, got:\n%s", out)
+	}
+}
+
 // Integration: generate should support writing .todo-graph to a custom path.
 func TestCLIGenerateSupportsOutputFlag(t *testing.T) {
 	tmp := t.TempDir()

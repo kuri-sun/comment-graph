@@ -24,16 +24,26 @@ func main() {
 	cmd := os.Args[1]
 	switch cmd {
 	case "generate":
-		output, err := parseGenerateFlags(os.Args[2:])
+		dir, output, err := parseGenerateFlags(os.Args[2:])
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
-		os.Exit(runGenerate(p, output))
+		os.Exit(runGenerate(p, dir, output))
 	case "check":
-		os.Exit(runCheck(p))
+		dir, err := parseDirFlag(os.Args[2:], "check")
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		os.Exit(runCheck(p, dir))
 	case "visualize":
-		os.Exit(runVisualize(os.Args[2:]))
+		dir, err := parseDirFlag(os.Args[2:], "visualize")
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		os.Exit(runVisualize(dir))
 	case "help", "-h", "--help":
 		printHelp()
 	default:
@@ -43,8 +53,8 @@ func main() {
 	}
 }
 
-func runGenerate(p printer, output string) int {
-	root, err := currentRoot()
+func runGenerate(p printer, dir, output string) int {
+	root, err := resolveRoot(dir)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to resolve working directory: %v\n", err)
 		return 1
@@ -83,8 +93,8 @@ func runGenerate(p printer, output string) int {
 	return 0
 }
 
-func runCheck(p printer) int {
-	root, err := currentRoot()
+func runCheck(p printer, dir string) int {
+	root, err := resolveRoot(dir)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to resolve working directory: %v\n", err)
 		return 1
@@ -131,18 +141,13 @@ func runCheck(p printer) int {
 	return 0
 }
 
-func runVisualize(args []string) int {
-	if len(args) > 0 {
-		fmt.Fprintln(os.Stderr, "visualize no longer accepts format flags; mermaid output was removed")
-		return 1
-	}
-
+func runVisualize(dir string) int {
 	p := newPrinter()
-	if code := runGenerate(p, ""); code != 0 {
+	if code := runGenerate(p, dir, ""); code != 0 {
 		return code
 	}
 
-	root, err := currentRoot()
+	root, err := resolveRoot(dir)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to resolve working directory: %v\n", err)
 		return 1
@@ -315,6 +320,13 @@ func renderTree(g graph.Graph) []string {
 	return lines
 }
 
+func resolveRoot(dir string) (string, error) {
+	if dir == "" {
+		return currentRoot()
+	}
+	return filepath.Abs(dir)
+}
+
 func currentRoot() (string, error) {
 	root, err := os.Getwd()
 	if err != nil {
@@ -323,24 +335,52 @@ func currentRoot() (string, error) {
 	return filepath.Abs(root)
 }
 
-func parseGenerateFlags(args []string) (string, error) {
+func parseGenerateFlags(args []string) (string, string, error) {
+	dir := ""
 	output := ""
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
+		case "--dir":
+			if i+1 >= len(args) {
+				return "", "", fmt.Errorf("missing value for --dir")
+			}
+			if dir != "" {
+				return "", "", fmt.Errorf("duplicate --dir flag")
+			}
+			dir = args[i+1]
+			i++
 		case "--output":
 			if i+1 >= len(args) {
-				return "", fmt.Errorf("missing value for --output")
+				return "", "", fmt.Errorf("missing value for --output")
 			}
 			if output != "" {
-				return "", fmt.Errorf("duplicate --output flag")
+				return "", "", fmt.Errorf("duplicate --output flag")
 			}
 			output = args[i+1]
 			i++
 		default:
-			return "", fmt.Errorf("unknown flag for generate: %s", args[i])
+			return "", "", fmt.Errorf("unknown flag for generate: %s", args[i])
 		}
 	}
-	return output, nil
+	return dir, output, nil
+}
+
+func parseDirFlag(args []string, cmd string) (string, error) {
+	dir := ""
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
+		switch arg {
+		case "--dir":
+			if i+1 >= len(args) {
+				return "", fmt.Errorf("missing value for --dir")
+			}
+			dir = args[i+1]
+			i++
+		default:
+			return "", fmt.Errorf("unknown flag for %s: %s", cmd, arg)
+		}
+	}
+	return dir, nil
 }
 
 func printHelp() {
@@ -348,7 +388,10 @@ func printHelp() {
 	fmt.Println()
 	fmt.Println("Usage:")
 	fmt.Println("  todo-graph generate     Scan repository and write .todo-graph")
+	fmt.Println("      --dir <path>        Run against a different root (defaults to cwd; useful in scripts)")
 	fmt.Println("      --output <path>     Write .todo-graph to a different path (for CI artifacts)")
 	fmt.Println("  todo-graph check        Validate TODO graph consistency")
+	fmt.Println("      --dir <path>        Target a different root")
 	fmt.Println("  todo-graph visualize    Show the graph as an indented tree")
+	fmt.Println("      --dir <path>        Target a different root (runs generate first)")
 }
