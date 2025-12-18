@@ -10,8 +10,6 @@ A small CLI that scans your codebase for `TODO` comments, builds a dependency gr
 
 ## Usage
 
-Run commands in the repo you want to track TODOs:
-
 - `todo-graph generate` — scan for TODOs and write `.todo-graph`.
 - `todo-graph check` — validate TODO references, detect cycles/isolated nodes, and ensure `.todo-graph` matches source.
 - `todo-graph visualize` — read `.todo-graph` and print an indented tree of the TODO graph.

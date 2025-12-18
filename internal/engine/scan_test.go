@@ -356,6 +356,103 @@ var x = "TODO: not a todo"
 	}
 }
 
+func TestScanParsesInlineComments(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, dir, "a.ts", `const x = 1; // TODO:[#a]
+function foo() { /* TODO:[#b] */ }
+SELECT 1 -- TODO:[#c]
+`)
+
+	g, errs, err := Scan(dir)
+	if err != nil {
+		t.Fatalf("scan error: %v", err)
+	}
+	if len(errs) != 0 {
+		t.Fatalf("unexpected scan errors: %+v", errs)
+	}
+	if len(g.Todos) != 3 {
+		t.Fatalf("expected 3 todos, got %d", len(g.Todos))
+	}
+}
+
+func TestScanBlockStartEndSameLine(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, dir, "a.js", `/* TODO:[#a] DEPS: #b */
+/* TODO:[#b] */
+`)
+
+	g, errs, err := Scan(dir)
+	if err != nil {
+		t.Fatalf("scan error: %v", err)
+	}
+	if len(errs) != 0 {
+		t.Fatalf("unexpected scan errors: %+v", errs)
+	}
+	if len(g.Edges) != 1 || g.Edges[0].From != "b" || g.Edges[0].To != "a" {
+		t.Fatalf("unexpected edges: %+v", g.Edges)
+	}
+}
+
+func TestScanMultipleTodosInBlock(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, dir, "a.js", `/*
+TODO:[#a]
+TODO:[#b]
+DEPS: #a
+*/
+`)
+
+	g, errs, err := Scan(dir)
+	if err != nil {
+		t.Fatalf("scan error: %v", err)
+	}
+	if len(errs) != 0 {
+		t.Fatalf("unexpected scan errors: %+v", errs)
+	}
+	if len(g.Todos) != 2 || len(g.Edges) != 1 {
+		t.Fatalf("unexpected graph: %+v", g)
+	}
+	if g.Edges[0].From != "a" || g.Edges[0].To != "b" {
+		t.Fatalf("unexpected edge: %+v", g.Edges[0])
+	}
+}
+
+func TestScanUnterminatedBlockDoesNotLeak(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, dir, "a.js", `/* TODO:[#a]
+// TODO:[#b]
+`)
+
+	g, errs, err := Scan(dir)
+	if err != nil {
+		t.Fatalf("scan error: %v", err)
+	}
+	if len(errs) != 0 {
+		t.Fatalf("unexpected scan errors: %+v", errs)
+	}
+	if len(g.Todos) != 2 {
+		t.Fatalf("expected 2 todos, got %+v", g.Todos)
+	}
+	if len(g.Edges) != 0 {
+		t.Fatalf("expected 0 edges, got %+v", g.Edges)
+	}
+}
+
+func TestScanRejectsSpaceSeparatedDeps(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, dir, "a.go", `// TODO:[#a]
+// DEPS: #b #c
+`)
+
+	_, errs, err := Scan(dir)
+	if err != nil {
+		t.Fatalf("scan error: %v", err)
+	}
+	if len(errs) != 1 || !strings.Contains(errs[0].Msg, "comma-separated") {
+		t.Fatalf("expected comma-separated error, got %+v", errs)
+	}
+}
+
 func writeFile(t *testing.T, dir, name, content string) {
 	t.Helper()
 	path := filepath.Join(dir, name)

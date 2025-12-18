@@ -137,21 +137,37 @@ func scanFile(path, rel string) ([]graph.Edge, []graph.Todo, []ScanError, error)
 			}
 		}
 		if !comment {
-			switch {
-			case strings.HasPrefix(trimmed, "//"),
-				strings.HasPrefix(trimmed, "#"),
-				strings.HasPrefix(trimmed, "--"):
+			// inline single-line markers anywhere
+			if idx := strings.Index(line, "//"); idx != -1 {
 				comment = true
-			default:
-				for _, bc := range blockComments {
-					if idx := strings.Index(line, bc.start); idx != -1 {
-						comment = true
-						if strings.Index(line[idx+len(bc.start):], bc.end) == -1 {
+			}
+			if idx := strings.Index(line, "#"); !comment && idx != -1 {
+				comment = true
+			}
+			if idx := strings.Index(line, "--"); !comment && idx != -1 {
+				comment = true
+			}
+		}
+		if !comment {
+			for _, bc := range blockComments {
+				if idx := strings.Index(line, bc.start); idx != -1 {
+					comment = true
+					after := line[idx+len(bc.start):]
+					if strings.Index(after, bc.end) == -1 {
+						// look ahead to see if an end exists
+						foundEnd := false
+						for j := i + 1; j < len(lines); j++ {
+							if strings.Contains(lines[j], bc.end) {
+								foundEnd = true
+								break
+							}
+						}
+						if foundEnd {
 							inBlock = true
 							currentBlockEnd = bc.end
 						}
-						break
 					}
+					break
 				}
 			}
 		}
