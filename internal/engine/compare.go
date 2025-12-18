@@ -3,7 +3,7 @@ package engine
 import (
 	"sort"
 
-	"todo-graph/internal/graph"
+	"github.com/kuri-sun/todo-graph/internal/graph"
 )
 
 // GraphsEqual returns true if todos and edges match, ignoring ordering.

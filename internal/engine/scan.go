@@ -9,7 +9,7 @@ import (
 	"sort"
 	"strings"
 
-	"todo-graph/internal/graph"
+	"github.com/kuri-sun/todo-graph/internal/graph"
 )
 
 var (

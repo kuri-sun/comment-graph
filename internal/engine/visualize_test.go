@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"todo-graph/internal/graph"
+	"github.com/kuri-sun/todo-graph/internal/graph"
 )
 
 // First visualize test: mermaid ordering.

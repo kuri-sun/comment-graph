@@ -7,8 +7,8 @@ import (
 	"sort"
 	"strings"
 
-	"todo-graph/internal/engine"
-	"todo-graph/internal/graph"
+	"github.com/kuri-sun/todo-graph/internal/engine"
+	"github.com/kuri-sun/todo-graph/internal/graph"
 )
 
 var version = "dev"

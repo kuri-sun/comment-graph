@@ -1,4 +1,4 @@
-module todo-graph
+module github.com/kuri-sun/todo-graph
 
 go 1.25.4
 

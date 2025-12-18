@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"todo-graph/internal/graph"
+	"github.com/kuri-sun/todo-graph/internal/graph"
 )
 
 // ReadGraph parses the .todo-graph file from the repository root.

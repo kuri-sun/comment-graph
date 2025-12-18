@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"todo-graph/internal/graph"
+	"github.com/kuri-sun/todo-graph/internal/graph"
 )
 
 // WriteGraph renders the graph to .todo-graph in YAML format.

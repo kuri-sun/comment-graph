@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"todo-graph/internal/graph"
+	"github.com/kuri-sun/todo-graph/internal/graph"
 )
 
 // RenderMermaid renders the graph in Mermaid syntax.

@@ -4,8 +4,9 @@ A small CLI that scans your codebase for `TODO` comments, builds a dependency gr
 
 ## Installation
 
-- With Go (requires Go 1.25): from the repo root run `go install ./cmd/todo-graph` (or `go build ./cmd/todo-graph` and use the resulting binary).
-- Node users can install the npm wrapper (`npm install` inside `npm/`); it downloads the platform binary and exposes `npx todo-graph`.
+- Binary download: Download the appropriate archive from the GitHub releases page, unpack, and put `todo-graph` on your PATH.
+- Go users: `go install github.com/kuri-sun/todo-graph/cmd/todo-graph@v0.0.1` (or `@latest` once newer tags exist).
+- Node users: `npm install -g todo-graph` or `npx todo-graph`.
 
 ## Usage
 
