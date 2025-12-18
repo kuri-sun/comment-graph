@@ -27,3 +27,32 @@ func TestValidateGraphReportsUndefinedEdges(t *testing.T) {
 		t.Fatalf("unexpected edge: %+v", edge)
 	}
 }
+
+func TestValidateGraphDetectsCycles(t *testing.T) {
+	g := graph.Graph{
+		Todos: map[string]graph.Todo{
+			"a": {ID: "a"},
+			"b": {ID: "b"},
+		},
+		Edges: []graph.Edge{
+			{From: "a", To: "b", Type: "blocks"},
+			{From: "b", To: "a", Type: "blocks"},
+		},
+	}
+
+	report := ValidateGraph(g, nil)
+
+	if len(report.Cycles) != 1 {
+		t.Fatalf("expected 1 cycle, got %d", len(report.Cycles))
+	}
+	want := []string{"a", "b", "a"}
+	got := report.Cycles[0]
+	if len(got) != len(want) {
+		t.Fatalf("unexpected cycle length: %v", got)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("unexpected cycle: %v", got)
+		}
+	}
+}
