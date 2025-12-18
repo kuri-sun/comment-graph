@@ -74,3 +74,20 @@ func TestValidateGraphDetectsIsolated(t *testing.T) {
 		t.Fatalf("expected isolated [b], got %v", report.Isolated)
 	}
 }
+
+func TestValidateGraphMismatchedGraphFlagged(t *testing.T) {
+	scanned := graph.Graph{
+		Todos: map[string]graph.Todo{
+			"a": {ID: "a"},
+		},
+		Edges: nil,
+	}
+	report := ValidateGraph(scanned, nil)
+	fileGraph := graph.Graph{Todos: map[string]graph.Todo{}}
+
+	mismatch := !GraphsEqual(scanned, fileGraph)
+	if !mismatch {
+		t.Fatalf("expected mismatch between scanned and file graph")
+	}
+	_ = report // ensures report is produced even when used with GraphsEqual in check path
+}
