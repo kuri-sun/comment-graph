@@ -9,6 +9,8 @@ import (
 	"todo-graph/internal/engine"
 )
 
+var version = "dev"
+
 func main() {
 	if len(os.Args) < 2 {
 		printHelp()
@@ -151,7 +153,7 @@ func currentRoot() (string, error) {
 }
 
 func printHelp() {
-	fmt.Println("todo-graph CLI")
+	fmt.Printf("todo-graph CLI (version %s)\n", version)
 	fmt.Println()
 	fmt.Println("Usage:")
 	fmt.Println("  todo-graph scan       Scan repository and update .todo-graph")

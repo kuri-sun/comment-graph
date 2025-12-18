@@ -1,0 +1,36 @@
+project_name: todo-graph
+
+before:
+  hooks:
+    - go test ./...
+
+builds:
+  - id: todo-graph
+    main: ./cmd/todo-graph
+    binary: todo-graph
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w -X main.version={{.Version}}
+
+archives:
+  - id: todo-graph
+    format_overrides:
+      - goos: windows
+        format: zip
+    files:
+      - LICENSE*
+      - README.md
+
+checksum:
+  name_template: "checksums.txt"
+
+changelog:
+  use: git
