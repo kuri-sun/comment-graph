@@ -16,7 +16,7 @@ Run commands in the repo you want to track TODOs:
 - `todo-graph check` — validate TODO references, detect cycles/isolated nodes, and ensure `.todo-graph` matches source.
 - `todo-graph visualize` — read `.todo-graph` and print an indented tree of the TODO graph.
 
-### Quick start
+## Quick start
 
 Add TODOs with optional IDs and dependencies in your code:
 
