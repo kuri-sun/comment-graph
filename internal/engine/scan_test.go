@@ -270,6 +270,92 @@ func TestScanIgnoresBinaryFile(t *testing.T) {
 	}
 }
 
+func TestScanParsesBlockCommentTODOs(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, dir, "a.js", `/*
+TODO:[#a]
+DEPS: #b
+*/
+/* TODO:[#b] */
+`)
+
+	g, errs, err := Scan(dir)
+	if err != nil {
+		t.Fatalf("scan error: %v", err)
+	}
+	if len(errs) != 0 {
+		t.Fatalf("unexpected scan errors: %+v", errs)
+	}
+	if len(g.Todos) != 2 {
+		t.Fatalf("expected 2 todos, got %d", len(g.Todos))
+	}
+	if len(g.Edges) != 1 || g.Edges[0].From != "b" || g.Edges[0].To != "a" {
+		t.Fatalf("unexpected edges: %+v", g.Edges)
+	}
+}
+
+func TestScanParsesHtmlStyleComments(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, dir, "a.html", `<!-- TODO:[#a] -->
+<!-- DEPS: #b -->
+<!-- TODO:[#b] -->
+`)
+
+	g, errs, err := Scan(dir)
+	if err != nil {
+		t.Fatalf("scan error: %v", err)
+	}
+	if len(errs) != 0 {
+		t.Fatalf("unexpected scan errors: %+v", errs)
+	}
+	if len(g.Todos) != 2 {
+		t.Fatalf("expected 2 todos, got %d", len(g.Todos))
+	}
+}
+
+func TestScanParsesTripleQuoteComments(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, dir, "a.py", `"""
+TODO:[#a]
+DEPS: #b
+"""
+""" TODO:[#b] """
+`)
+
+	g, errs, err := Scan(dir)
+	if err != nil {
+		t.Fatalf("scan error: %v", err)
+	}
+	if len(errs) != 0 {
+		t.Fatalf("unexpected scan errors: %+v", errs)
+	}
+	if len(g.Todos) != 2 {
+		t.Fatalf("expected 2 todos, got %d", len(g.Todos))
+	}
+	if len(g.Edges) != 1 || g.Edges[0].From != "b" || g.Edges[0].To != "a" {
+		t.Fatalf("unexpected edges: %+v", g.Edges)
+	}
+}
+
+func TestScanIgnoresTodoInCode(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, dir, "a.go", `package main
+
+var x = "TODO: not a todo"
+`)
+
+	g, errs, err := Scan(dir)
+	if err != nil {
+		t.Fatalf("scan error: %v", err)
+	}
+	if len(errs) != 0 {
+		t.Fatalf("unexpected scan errors: %+v", errs)
+	}
+	if len(g.Todos) != 0 {
+		t.Fatalf("expected no todos, got %+v", g.Todos)
+	}
+}
+
 func writeFile(t *testing.T, dir, name, content string) {
 	t.Helper()
 	path := filepath.Join(dir, name)
