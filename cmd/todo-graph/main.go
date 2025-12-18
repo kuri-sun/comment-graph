@@ -55,16 +55,10 @@ func runGenerate(p printer) int {
 		p.resultLine(false)
 		return 1
 	}
-	if len(errs) > 0 {
-		fmt.Fprintln(os.Stderr)
-		p.sectionErrRed("Errors")
-		for _, e := range errs {
-			fmt.Fprintf(os.Stderr, "  - %s:%d: %s\n", e.File, e.Line, e.Msg)
-		}
-		fmt.Fprintln(os.Stderr)
-		p.warnLine("Fix the TODO metadata above and re-run `todo-graph generate`.")
-		p.resultLine(false)
-		return 1
+
+	report := engine.ValidateGraph(graph, errs)
+	if code, failed := validateAndReport(p, graph, report, nil, false); failed {
+		return code
 	}
 
 	if err := engine.WriteGraph(root, graph); err != nil {
@@ -121,37 +115,6 @@ func runCheck(p printer) int {
 		}
 	}
 
-	report := engine.ValidateGraph(scanned, scanErrs)
-	if len(report.ScanErrors) > 0 {
-		printFailureHeader()
-		printErrorsSection()
-		for _, e := range report.ScanErrors {
-			fmt.Fprintf(os.Stderr, "  - %s:%d: %s\n", e.File, e.Line, e.Msg)
-		}
-		fmt.Fprintln(os.Stderr)
-		p.warnLine("Fix scan issues and re-run `todo-graph check`.")
-		fmt.Fprintln(os.Stderr)
-		return 3
-	}
-	if len(report.UndefinedEdges) > 0 {
-		printFailureHeader()
-		printErrorsSection()
-		for _, e := range report.UndefinedEdges {
-			fmt.Fprintf(os.Stderr, "  - %s\n", describeUndefinedEdge(e, scanned.Todos))
-		}
-		fmt.Fprintln(os.Stderr)
-		return 1
-	}
-	if len(report.Cycles) > 0 {
-		printFailureHeader()
-		printErrorsSection()
-		fmt.Fprintln(os.Stderr, "  - cycles detected:")
-		for _, c := range report.Cycles {
-			fmt.Fprintf(os.Stderr, "    cycle: %s\n", strings.Join(c, " -> "))
-		}
-		fmt.Fprintln(os.Stderr)
-		return 2
-	}
 	fileGraph, err := engine.ReadGraph(root)
 	if err != nil {
 		printFailureHeader()
@@ -161,22 +124,9 @@ func runCheck(p printer) int {
 		return 3
 	}
 
-	mismatch := false
-	if len(report.Isolated) > 0 {
-		printFailureHeader()
-		printErrorsSection()
-		fmt.Fprintf(os.Stderr, "  - isolated TODOs: %s\n", strings.Join(report.Isolated, ", "))
-		mismatch = true
-	}
-	if !engine.GraphsEqual(scanned, fileGraph) {
-		printFailureHeader()
-		printErrorsSection()
-		fmt.Fprintln(os.Stderr, "  - .todo-graph is out of date (run todo-graph generate)")
-		mismatch = true
-	}
-	if mismatch {
-		fmt.Fprintln(os.Stderr)
-		return 3
+	report := engine.ValidateGraph(scanned, scanErrs)
+	if code, failed := validateAndReport(p, scanned, report, &fileGraph, true); failed {
+		return code
 	}
 
 	fmt.Println()
@@ -194,6 +144,11 @@ func runVisualize(args []string) int {
 		return 1
 	}
 
+	p := newPrinter()
+	if code := runGenerate(p); code != 0 {
+		return code
+	}
+
 	root, err := currentRoot()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to resolve working directory: %v\n", err)
@@ -206,13 +161,96 @@ func runVisualize(args []string) int {
 		return 1
 	}
 
-	p := newPrinter()
 	fmt.Println()
 	p.section("TODO Graph")
 	for _, line := range renderTree(g) {
 		fmt.Println("  " + line)
 	}
 	return 0
+}
+
+// validateAndReport renders validation errors consistently. Returns (exitCode, failed).
+func validateAndReport(p printer, scanned graph.Graph, report engine.CheckReport, fileGraph *graph.Graph, checkDrift bool) (int, bool) {
+	printFailureHeader := func() {
+		fmt.Fprintln(os.Stderr)
+		p.section("Check completed")
+		p.resultLine(false)
+	}
+	printErrorsSection := func() {
+		fmt.Fprintln(os.Stderr)
+		p.section("Errors")
+	}
+
+	ensureHeader := func(done *bool) {
+		if !*done {
+			printFailureHeader()
+			printErrorsSection()
+			*done = true
+		}
+	}
+
+	headerPrinted := false
+
+	if len(report.ScanErrors) > 0 {
+		ensureHeader(&headerPrinted)
+		for _, e := range report.ScanErrors {
+			fmt.Fprintf(os.Stderr, "  - %s:%d: %s\n", e.File, e.Line, e.Msg)
+		}
+		fmt.Fprintln(os.Stderr)
+		p.warnLine("Fix scan issues and re-run `todo-graph check`.")
+		fmt.Fprintln(os.Stderr)
+		return 3, true
+	}
+
+	if len(report.UndefinedEdges) > 0 {
+		ensureHeader(&headerPrinted)
+		for _, e := range report.UndefinedEdges {
+			fromTodo, fromOK := scanned.Todos[e.From]
+			toTodo, toOK := scanned.Todos[e.To]
+			switch {
+			case !fromOK && toOK:
+				fmt.Fprintf(os.Stderr, "  - missing %q (at %s:%d)\n", e.From, toTodo.File, toTodo.Line)
+			case fromOK && !toOK:
+				fmt.Fprintf(os.Stderr, "  - missing %q (at %s:%d)\n", e.To, fromTodo.File, fromTodo.Line)
+			case !fromOK && !toOK:
+				fmt.Fprintf(os.Stderr, "  - missing TODOs %q and %q (edge present but ids undefined)\n", e.From, e.To)
+			default:
+				fmt.Fprintf(os.Stderr, "  - undefined TODO reference: %s -> %s\n", e.From, e.To)
+			}
+		}
+		fmt.Fprintln(os.Stderr)
+		return 1, true
+	}
+
+	if len(report.Cycles) > 0 {
+		ensureHeader(&headerPrinted)
+		fmt.Fprintln(os.Stderr, "  - cycles detected:")
+		for _, c := range report.Cycles {
+			fmt.Fprintf(os.Stderr, "    cycle: %s\n", strings.Join(c, " -> "))
+		}
+		fmt.Fprintln(os.Stderr)
+		return 2, true
+	}
+
+	mismatch := false
+	if len(report.Isolated) > 0 {
+		ensureHeader(&headerPrinted)
+		fmt.Fprintf(os.Stderr, "  - isolated TODOs: %s\n", strings.Join(report.Isolated, ", "))
+		mismatch = true
+	}
+
+	if checkDrift && fileGraph != nil && !engine.GraphsEqual(scanned, *fileGraph) {
+		ensureHeader(&headerPrinted)
+		fmt.Fprintln(os.Stderr, "  - .todo-graph is out of date (run todo-graph generate)")
+		mismatch = true
+	}
+
+	if mismatch {
+		fmt.Fprintln(os.Stderr)
+		return 3, true
+	}
+
+	return 0, false
 }
 
 func findRoots(g graph.Graph) []string {
