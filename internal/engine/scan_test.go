@@ -146,6 +146,24 @@ func TestScanParsesDependsAndBlocksLists(t *testing.T) {
 	}
 }
 
+func TestScanRejectsMetadataWithoutHash(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, dir, "a.go", `// TODO:[#a]
+// depends-on: b
+`)
+
+	_, errs, err := Scan(dir)
+	if err != nil {
+		t.Fatalf("scan error: %v", err)
+	}
+	if len(errs) != 1 {
+		t.Fatalf("expected 1 scan error, got %d: %+v", len(errs), errs)
+	}
+	if !strings.Contains(errs[0].Msg, "must start with #") {
+		t.Fatalf("expected missing hash error, got %+v", errs)
+	}
+}
+
 func writeFile(t *testing.T, dir, name, content string) {
 	t.Helper()
 	path := filepath.Join(dir, name)
