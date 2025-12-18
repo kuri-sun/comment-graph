@@ -125,3 +125,24 @@ func TestValidateGraphScanErrorsSurfaced(t *testing.T) {
 		t.Fatalf("unexpected scan error: %+v", report.ScanErrors[0])
 	}
 }
+
+func TestValidateGraphReportsUndefinedFrom(t *testing.T) {
+	g := graph.Graph{
+		Todos: map[string]graph.Todo{
+			"b": {ID: "b"},
+		},
+		Edges: []graph.Edge{
+			{From: "missing", To: "b", Type: "blocks"},
+		},
+	}
+
+	report := ValidateGraph(g, nil)
+
+	if len(report.UndefinedEdges) != 1 {
+		t.Fatalf("expected 1 undefined edge, got %d", len(report.UndefinedEdges))
+	}
+	e := report.UndefinedEdges[0]
+	if e.From != "missing" || e.To != "b" {
+		t.Fatalf("unexpected undefined edge: %+v", e)
+	}
+}
