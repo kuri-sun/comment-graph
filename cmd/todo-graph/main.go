@@ -84,7 +84,6 @@ func runScan(p printer, showTree bool) int {
 	p.resultLine(true)
 	p.infof("todos : %d", len(graph.Todos))
 	p.infof("genereated: %s", filepath.Join(root, ".todo-graph"))
-	fmt.Println()
 
 	if showTree {
 		fmt.Println()
