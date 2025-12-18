@@ -18,8 +18,8 @@ async function main() {
   const platform = mapPlatform(process.platform);
   const arch = mapArch(process.arch);
   const version = pkg.version;
-  const repo = process.env.TODO_GRAPH_REPO || "todo-graph/todo-graph";
-  const host = process.env.TODO_GRAPH_HOST || "https://github.com";
+  const repo = "kuri-sun/todo-graph";
+  const host = "https://github.com";
 
   const ext = platform === "windows" ? "zip" : "tar.gz";
   const archiveName = `todo-graph_${version}_${platform}_${arch}.${ext}`;
