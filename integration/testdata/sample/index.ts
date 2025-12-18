@@ -1,7 +1,7 @@
-// TODO: cleanup-legacy remove legacy endpoints
-// depends-on: #cache-user
+// TODO: cleanup-sample remove legacy endpoints
+// depends-on: #cache-sample
 
-import { getUser } from "./user"
+import { getUser } from "./users"
 
 export async function handler(id: string) {
   const user = await getUser(id)
