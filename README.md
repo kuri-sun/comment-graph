@@ -16,18 +16,16 @@ A small CLI that scans your codebase for `TODO` comments, builds a dependency gr
 
 ## Quick start
 
-Add TODOs with optional IDs and dependencies in your code:
-
-user.ts
-
 ```ts
+// user.ts
+
 // TODO:[#db-migration] database migration
 function getUser() {
 ```
 
-cache.ts
-
 ```ts
+// cache.ts
+
 // TODO: cache-user add cache layer for user reads
 // DEPS: #db-migration
 function cacheUser() {
