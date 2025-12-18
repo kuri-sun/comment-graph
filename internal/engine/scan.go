@@ -13,17 +13,11 @@ import (
 )
 
 var (
-	todoLinePattern = regexp.MustCompile(`TODO:?\s*(\[#([^\]]*)\])?(.*)`)
+	todoLinePattern = regexp.MustCompile(`TODO:?`)
 	todoIDPattern   = regexp.MustCompile(`^[a-z0-9_-]+$`)
-	commentLine     = regexp.MustCompile(`^\s*(//|#|--|/\*|\*|<!--)`)
 )
 
 var commentClosers = []string{"*/", "-->", `"""`, `'''`}
-
-type blockComment struct {
-	start string
-	end   string
-}
 
 // ScanError provides contextual information for parse failures.
 type ScanError struct {
@@ -101,53 +95,6 @@ func shouldSkipDir(name string) bool {
 	}
 }
 
-func commentFlags(lines []string) []bool {
-	var flags []bool
-	inBlock := false
-	var blockEnd string
-	blockComments := []blockComment{
-		{start: "/*", end: "*/"},
-		{start: "<!--", end: "-->"},
-		{start: `"""`, end: `"""`},
-		{start: `'''`, end: `'''`},
-	}
-
-	for _, line := range lines {
-		comment := false
-
-		if inBlock {
-			comment = true
-			if blockEnd != "" && strings.Contains(line, blockEnd) {
-				inBlock = false
-				blockEnd = ""
-			}
-		}
-
-		if !comment {
-			if strings.Contains(line, "//") || strings.Contains(line, "#") || strings.Contains(line, "--") {
-				comment = true
-			}
-		}
-
-		if !comment {
-			for _, bc := range blockComments {
-				if idx := strings.Index(line, bc.start); idx != -1 {
-					comment = true
-					if strings.Index(line[idx+len(bc.start):], bc.end) == -1 {
-						inBlock = true
-						blockEnd = bc.end
-					}
-					break
-				}
-			}
-		}
-
-		flags = append(flags, comment)
-	}
-
-	return flags
-}
-
 func scanFile(path, rel string) ([]graph.Edge, []graph.Todo, []ScanError, error) {
 	content, err := os.ReadFile(path)
 	if err != nil {
@@ -160,107 +107,171 @@ func scanFile(path, rel string) ([]graph.Edge, []graph.Todo, []ScanError, error)
 	lines := strings.Split(string(content), "\n")
 
 	var edges []graph.Edge
-	var todos []graph.Todo
 	var errs []ScanError
+	todos := make(map[string]graph.Todo)
 
-	comments := commentFlags(lines)
+	type pending struct {
+		line int
+		id   string
+		deps []string
+	}
+	var current *pending
+
+	inBlock := false
+	blockEnd := ""
 
 	for i := 0; i < len(lines); i++ {
 		line := lines[i]
+		trimmed := strings.TrimSpace(line)
 
-		if i >= len(comments) || !comments[i] {
+		isCommentStart := strings.HasPrefix(trimmed, "//") ||
+			strings.HasPrefix(trimmed, "#") ||
+			strings.HasPrefix(trimmed, "--") ||
+			strings.HasPrefix(trimmed, "/*") ||
+			strings.HasPrefix(trimmed, "<!--") ||
+			strings.HasPrefix(trimmed, `"""`) ||
+			strings.HasPrefix(trimmed, `'''`) ||
+			(inBlock && strings.HasPrefix(trimmed, "*"))
+
+		comment := inBlock || isCommentStart
+
+		// close block if end appears on this line
+		if inBlock && blockEnd != "" && strings.Contains(line, blockEnd) {
+			inBlock = false
+			blockEnd = ""
+		}
+
+		// open block only when comment start is at the beginning
+		if !inBlock {
+			switch {
+			case strings.HasPrefix(trimmed, "/*"):
+				if !strings.Contains(line, "*/") {
+					inBlock = true
+					blockEnd = "*/"
+				}
+			case strings.HasPrefix(trimmed, "<!--"):
+				if !strings.Contains(line, "-->") {
+					inBlock = true
+					blockEnd = "-->"
+				}
+			case strings.HasPrefix(trimmed, `"""`):
+				if strings.Count(line, `"""`) == 1 {
+					inBlock = true
+					blockEnd = `"""`
+				}
+			case strings.HasPrefix(trimmed, `'''`):
+				if strings.Count(line, `'''`) == 1 {
+					inBlock = true
+					blockEnd = `'''`
+				}
+			}
+		}
+
+		// break association on blank or non-comment
+		if current != nil && (trimmed == "" || (!comment && !todoLinePattern.MatchString(trimmed))) {
+			if current.id == "" {
+				errs = append(errs, ScanError{File: rel, Line: current.line, Msg: "TODO id is required (add @todo-id)"})
+			} else {
+				todos[current.id] = graph.Todo{ID: current.id, File: rel, Line: current.line}
+				for _, dep := range current.deps {
+					edges = append(edges, graph.Edge{From: dep, To: current.id, Type: "blocks"})
+				}
+			}
+			current = nil
+		}
+
+		// inline TODO not allowed
+		if todoLinePattern.MatchString(line) && !isCommentStart && !inBlock {
+			errs = append(errs, ScanError{File: rel, Line: i + 1, Msg: "TODO must start at a comment line"})
+			continue
+		}
+
+		if !comment {
 			continue
 		}
 
 		match := todoLinePattern.FindStringSubmatch(line)
-		if match == nil {
+		if match != nil {
+			// close previous pending
+			if current != nil {
+				if current.id == "" {
+					errs = append(errs, ScanError{File: rel, Line: current.line, Msg: "TODO id is required (add @todo-id)"})
+				} else {
+					todos[current.id] = graph.Todo{ID: current.id, File: rel, Line: current.line}
+					for _, dep := range current.deps {
+						edges = append(edges, graph.Edge{From: dep, To: current.id, Type: "blocks"})
+					}
+				}
+			}
+
+			current = &pending{
+				line: i + 1,
+				id:   "",
+				deps: nil,
+			}
 			continue
 		}
 
-		rawID := match[2]
-		desc := strings.TrimSpace(match[3])
-		if match[1] != "" && rawID == "" {
-			errs = append(errs, ScanError{File: rel, Line: i + 1, Msg: "TODO id must not be empty"})
+		// metadata handling
+		lower := strings.ToLower(trimmed)
+		if current == nil {
+			if strings.HasPrefix(lower, "@todo-id") || strings.HasPrefix(lower, "@todo-deps") {
+				errs = append(errs, ScanError{File: rel, Line: i + 1, Msg: "metadata without a preceding TODO"})
+			}
 			continue
 		}
-		if rawID == "" {
-			derived := deriveID(desc, i+1)
-			if derived == "" {
+
+		switch {
+		case strings.HasPrefix(lower, "@todo-id"):
+			val := strings.TrimSpace(strings.TrimPrefix(lower, "@todo-id"))
+			val = strings.TrimPrefix(val, ":")
+			val = strings.TrimSpace(val)
+			if val == "" {
 				errs = append(errs, ScanError{File: rel, Line: i + 1, Msg: "TODO id must not be empty"})
 				continue
 			}
-			rawID = derived
-		}
-		if !todoIDPattern.MatchString(rawID) {
-			errs = append(errs, ScanError{
-				File: rel,
-				Line: i + 1,
-				Msg:  fmt.Sprintf("TODO id %q must use lowercase letters, digits, hyphens, or underscores", rawID),
-			})
-			continue
-		}
-
-		todo := graph.Todo{
-			ID:   rawID,
-			File: rel,
-			Line: i + 1,
-		}
-
-		inlineDeps, inlineErrs := parseInlineDeps(desc, rel, i+1)
-		errs = append(errs, inlineErrs...)
-
-		depends, _, metaErrs, endIdx := parseMetadata(lines, comments, i+1, rel)
-		depends = append(depends, inlineDeps...)
-		errs = append(errs, metaErrs...)
-
-		for _, dep := range depends {
-			edges = append(edges, graph.Edge{From: dep, To: rawID, Type: "blocks"})
-		}
-
-		todos = append(todos, todo)
-		i = endIdx
-	}
-
-	return edges, todos, errs, nil
-}
-
-func parseMetadata(lines []string, comments []bool, start int, file string) (depends []string, blocks []string, errs []ScanError, end int) {
-	end = start - 1
-	for idx := start; idx < len(lines); idx++ {
-		line := lines[idx]
-		if todoLinePattern.MatchString(line) {
-			end = idx - 1
-			return
-		}
-		if idx >= len(comments) || !comments[idx] {
-			end = idx - 1
-			return
-		}
-
-		key, values := parseKeyValue(line)
-		switch key {
-		case "deps":
-			ids, idErrs := parseIDs(values, idx+1, file)
+			if !todoIDPattern.MatchString(val) {
+				errs = append(errs, ScanError{
+					File: rel,
+					Line: i + 1,
+					Msg:  fmt.Sprintf("TODO id %q must use lowercase letters, digits, hyphens, or underscores", val),
+				})
+				continue
+			}
+			current.id = val
+		case strings.HasPrefix(lower, "@todo-deps"):
+			raw := strings.TrimSpace(strings.TrimPrefix(lower, "@todo-deps"))
+			raw = strings.TrimPrefix(raw, ":")
+			raw = strings.TrimSpace(raw)
+			ids, idErrs := parseIDs(raw, i+1, rel)
 			errs = append(errs, idErrs...)
-			depends = append(depends, ids...)
+			current.deps = append(current.deps, ids...)
+		case strings.HasPrefix(lower, "@"):
+			errs = append(errs, ScanError{File: rel, Line: i + 1, Msg: "unknown metadata (use @todo-id or @todo-deps)"})
 		default:
-			// ignore unknown keys
+			// plain comment allowed
 		}
-		end = idx
 	}
-	return
-}
 
-func parseKeyValue(line string) (key string, value string) {
-	trimmed := commentLine.ReplaceAllString(line, "")
-	trimmed = strings.TrimSpace(trimmed)
-	colon := strings.Index(trimmed, ":")
-	if colon == -1 {
-		return "", ""
+	// flush pending
+	if current != nil {
+		if current.id == "" {
+			errs = append(errs, ScanError{File: rel, Line: current.line, Msg: "TODO id is required (add @todo-id)"})
+		} else {
+			todos[current.id] = graph.Todo{ID: current.id, File: rel, Line: current.line}
+			for _, dep := range current.deps {
+				edges = append(edges, graph.Edge{From: dep, To: current.id, Type: "blocks"})
+			}
+		}
 	}
-	key = strings.ToLower(strings.TrimSpace(trimmed[:colon]))
-	value = cleanCommentSuffix(strings.TrimSpace(trimmed[colon+1:]))
-	return
+
+	// convert todo map to slice
+	var todoList []graph.Todo
+	for _, t := range todos {
+		todoList = append(todoList, t)
+	}
+
+	return edges, todoList, errs, nil
 }
 
 func parseIDs(raw string, line int, file string) ([]string, []ScanError) {
@@ -272,16 +283,11 @@ func parseIDs(raw string, line int, file string) ([]string, []ScanError) {
 		return nil, nil
 	}
 
-	var parts []string
-	if strings.Contains(trimmed, ",") {
-		parts = strings.Split(trimmed, ",")
-	} else {
-		fields := strings.Fields(trimmed)
-		if len(fields) > 1 {
-			return nil, []ScanError{{File: file, Line: line, Msg: "ids must be comma-separated (e.g. #a, #b)"}}
-		}
-		parts = []string{trimmed}
+	if !strings.Contains(trimmed, ",") && strings.Contains(trimmed, " ") {
+		return nil, []ScanError{{File: file, Line: line, Msg: "ids must be comma-separated (e.g. a, b)"}}
 	}
+
+	parts := strings.Split(trimmed, ",")
 
 	var ids []string
 	var errs []ScanError
@@ -290,15 +296,8 @@ func parseIDs(raw string, line int, file string) ([]string, []ScanError) {
 		if p == "" {
 			continue
 		}
-		if strings.Contains(p, " ") {
-			errs = append(errs, ScanError{File: file, Line: line, Msg: "ids must be comma-separated (e.g. #a, #b)"})
-			continue
-		}
 		if strings.HasPrefix(p, "#") {
 			p = strings.TrimPrefix(p, "#")
-		} else {
-			errs = append(errs, ScanError{File: file, Line: line, Msg: fmt.Sprintf("id %q must start with #", p)})
-			continue
 		}
 		if !todoIDPattern.MatchString(p) {
 			errs = append(errs, ScanError{
@@ -321,18 +320,46 @@ func cleanCommentSuffix(s string) string {
 	return strings.TrimSpace(s)
 }
 
-func parseInlineDeps(desc, file string, line int) ([]string, []ScanError) {
-	desc = strings.TrimSpace(cleanCommentSuffix(desc))
-	if desc == "" {
+func parseIDs(raw string, line int, file string) ([]string, []ScanError) {
+	if raw == "" {
 		return nil, nil
 	}
-	lower := strings.ToLower(desc)
-	idx := strings.Index(lower, "deps:")
-	if idx == -1 {
+	trimmed := strings.TrimSpace(cleanCommentSuffix(raw))
+	if trimmed == "" {
 		return nil, nil
 	}
-	raw := desc[idx+len("deps:"):]
-	return parseIDs(raw, line, file)
+
+	if !strings.Contains(trimmed, ",") && strings.Contains(trimmed, " ") {
+		return nil, []ScanError{{File: file, Line: line, Msg: "ids must be comma-separated (e.g. a, b)"}}
+	}
+
+	parts := strings.Split(trimmed, ",")
+
+	var ids []string
+	var errs []ScanError
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if p == "" {
+			continue
+		}
+		if strings.Contains(p, " ") {
+			errs = append(errs, ScanError{File: file, Line: line, Msg: "ids must be comma-separated (e.g. a, b)"})
+			continue
+		}
+		if strings.HasPrefix(p, "#") {
+			p = strings.TrimPrefix(p, "#")
+		}
+		if !todoIDPattern.MatchString(p) {
+			errs = append(errs, ScanError{
+				File: file,
+				Line: line,
+				Msg:  fmt.Sprintf("id %q must use lowercase letters, digits, hyphens, or underscores", p),
+			})
+			continue
+		}
+		ids = append(ids, p)
+	}
+	return ids, errs
 }
 
 func dedupeEdges(edges []graph.Edge) []graph.Edge {
@@ -364,8 +391,4 @@ func isBinary(content []byte) bool {
 		}
 	}
 	return false
-}
-
-func deriveID(desc string, line int) string {
-	return fmt.Sprintf("todo-%d", line)
 }
