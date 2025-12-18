@@ -111,6 +111,41 @@ func TestScanDetectsDuplicateIDs(t *testing.T) {
 	}
 }
 
+func TestScanParsesDependsAndBlocksLists(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, dir, "a.go", `// TODO:[#a]
+// depends-on: #b, #c
+// blocks: #d #e
+`)
+
+	g, errs, err := Scan(dir)
+	if err != nil {
+		t.Fatalf("scan error: %v", err)
+	}
+	if len(errs) != 0 {
+		t.Fatalf("unexpected scan errors: %+v", errs)
+	}
+	if len(g.Edges) != 4 {
+		t.Fatalf("expected 4 edges, got %d", len(g.Edges))
+	}
+	want := map[string]bool{
+		"b->a": true,
+		"c->a": true,
+		"a->d": true,
+		"a->e": true,
+	}
+	for _, e := range g.Edges {
+		key := e.From + "->" + e.To
+		if !want[key] {
+			t.Fatalf("unexpected edge: %+v", e)
+		}
+		delete(want, key)
+	}
+	if len(want) != 0 {
+		t.Fatalf("missing edges: %+v", want)
+	}
+}
+
 func writeFile(t *testing.T, dir, name, content string) {
 	t.Helper()
 	path := filepath.Join(dir, name)
