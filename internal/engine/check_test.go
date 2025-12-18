@@ -91,3 +91,23 @@ func TestValidateGraphMismatchedGraphFlagged(t *testing.T) {
 	}
 	_ = report // ensures report is produced even when used with GraphsEqual in check path
 }
+
+func TestValidateGraphDetectsSelfCycle(t *testing.T) {
+	g := graph.Graph{
+		Todos: map[string]graph.Todo{
+			"a": {ID: "a"},
+		},
+		Edges: []graph.Edge{
+			{From: "a", To: "a", Type: "blocks"},
+		},
+	}
+
+	report := ValidateGraph(g, nil)
+
+	if len(report.Cycles) != 1 {
+		t.Fatalf("expected 1 cycle, got %d", len(report.Cycles))
+	}
+	if len(report.Cycles[0]) != 2 || report.Cycles[0][0] != "a" || report.Cycles[0][1] != "a" {
+		t.Fatalf("unexpected self cycle: %v", report.Cycles[0])
+	}
+}
