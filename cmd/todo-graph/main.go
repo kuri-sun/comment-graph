@@ -87,7 +87,7 @@ func runScan(p printer, showTree bool) int {
 
 	if roots := findRoots(graph); len(roots) > 0 {
 		fmt.Println()
-		p.section("TODO Graph (only root TODOs)")
+		p.section("TODO Graph (roots; use --tree for full)")
 		for _, id := range roots {
 			if t, ok := graph.Todos[id]; ok {
 				fmt.Printf("  - [ ] %s (%s:%d)\n", id, t.File, t.Line)
