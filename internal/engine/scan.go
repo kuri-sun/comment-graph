@@ -15,8 +15,13 @@ import (
 var (
 	todoLinePattern = regexp.MustCompile(`TODO:?\s*(\[#([^\]]*)\])?(.*)`)
 	todoIDPattern   = regexp.MustCompile(`^[a-z0-9_-]+$`)
-	commentLine     = regexp.MustCompile(`^\s*(//|#)`)
+	commentLine     = regexp.MustCompile(`^\s*(//|#|--|/\\*|\\*|<!--)`)
 )
+
+type blockComment struct {
+	start string
+	end   string
+}
 
 // ScanError provides contextual information for parse failures.
 type ScanError struct {
@@ -109,8 +114,52 @@ func scanFile(path, rel string) ([]graph.Edge, []graph.Todo, []ScanError, error)
 	var todos []graph.Todo
 	var errs []ScanError
 
+	blockComments := []blockComment{
+		{start: "/*", end: "*/"},
+		{start: "<!--", end: "-->"},
+		{start: `"""`, end: `"""`},
+		{start: `'''`, end: `'''`},
+	}
+	inBlock := false
+	var currentBlockEnd string
+
 	for i := 0; i < len(lines); i++ {
 		line := lines[i]
+		trimmed := strings.TrimSpace(line)
+
+		// determine if this line is in a comment
+		comment := false
+		if inBlock {
+			comment = true
+			if strings.Contains(line, currentBlockEnd) {
+				inBlock = false
+				currentBlockEnd = ""
+			}
+		}
+		if !comment {
+			switch {
+			case strings.HasPrefix(trimmed, "//"),
+				strings.HasPrefix(trimmed, "#"),
+				strings.HasPrefix(trimmed, "--"):
+				comment = true
+			default:
+				for _, bc := range blockComments {
+					if idx := strings.Index(line, bc.start); idx != -1 {
+						comment = true
+						if strings.Index(line[idx+len(bc.start):], bc.end) == -1 {
+							inBlock = true
+							currentBlockEnd = bc.end
+						}
+						break
+					}
+				}
+			}
+		}
+
+		if !comment {
+			continue
+		}
+
 		match := todoLinePattern.FindStringSubmatch(line)
 		if match == nil {
 			continue
