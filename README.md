@@ -42,4 +42,4 @@ todo-graph visualize  # shows a tree of the graph
 ```
 
 IDs must use lowercase letters/digits/hyphens/underscores. If no `[#id]` is provided, an ID like `todo-<line>` is generated.
-Only `deps` metadata is parsed (one or more IDs, comma-separated, each prefixed with `#`).
+Only `DEPS` metadata is parsed (one or more IDs, comma-separated, each prefixed with `#`).

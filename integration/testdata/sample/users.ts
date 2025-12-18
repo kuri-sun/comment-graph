@@ -3,7 +3,7 @@
 const cache: Record<string, User> = {}
 
 // TODO: cache-sample add cache layer for user reads
-// deps: #db-sample
+// DEPS: #db-sample
 export async function getUser(id: string): Promise<User> {
   const cached = cache[id]
   if (cached) return cached

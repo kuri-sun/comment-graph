@@ -1,5 +1,5 @@
 // TODO:[#b] implement storage
-// deps: #a
+// DEPS: #a
 
 export async function persist(data: string) {
   return saveToDB(data)

@@ -1,5 +1,5 @@
 // TODO:[#a] wire API layer
-// deps: #b
+// DEPS: #b
 
 import { persist } from "./b"
 
