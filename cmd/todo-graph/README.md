@@ -8,6 +8,8 @@
 
 ### Flags and behavior
 
+- `--output <path>` — write `.todo-graph` to a custom path (useful for CI artifacts).
+- `--dir <path>` — run commands against a different repository root (useful in scripts/CI).
 - `--help`, `-h` — show usage.
 - Colors auto-enable on TTY; set `NO_COLOR=1` to disable.
 - Exit codes:

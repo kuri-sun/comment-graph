@@ -10,9 +10,26 @@ import (
 	"github.com/kuri-sun/todo-graph/internal/graph"
 )
 
-// WriteGraph renders the graph to .todo-graph in YAML format.
-func WriteGraph(root string, g graph.Graph) error {
-	path := filepath.Join(root, ".todo-graph")
+// WriteGraph renders the graph to .todo-graph (default) or a custom path.
+// If outputPath is empty, it writes to root/.todo-graph. Relative paths are
+// resolved against root.
+func WriteGraph(root, outputPath string, g graph.Graph) error {
+	path := outputPath
+	if path == "" {
+		path = filepath.Join(root, ".todo-graph")
+	} else if !filepath.IsAbs(path) {
+		path = filepath.Join(root, path)
+	}
+
+	var err error
+	path, err = filepath.Abs(path)
+	if err != nil {
+		return err
+	}
+
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return err
+	}
 
 	var b strings.Builder
 	b.WriteString("version: 1\n\n")
