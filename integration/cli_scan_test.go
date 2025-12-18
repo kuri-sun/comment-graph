@@ -152,6 +152,28 @@ func TestCLIDirFlagTargetsRoot(t *testing.T) {
 	}
 }
 
+// Integration: generate should support writing .todo-graph to a custom path.
+func TestCLIGenerateSupportsOutputFlag(t *testing.T) {
+	tmp := t.TempDir()
+	copyFixtureFile(t, filepath.Join("sample", "index.ts"), tmp)
+	copyFixtureFile(t, filepath.Join("sample", "users.ts"), tmp)
+
+	bin := buildCLI(t)
+	output := filepath.Join(tmp, "artifacts", "graph.yaml")
+
+	runCmd(t, bin, tmp, "generate", "--output", output)
+
+	got := readFile(t, output)
+	if !strings.Contains(got, "\n  cache-sample:\n") || !strings.Contains(got, "\n  db-sample:\n") {
+		t.Fatalf("unexpected todos section:\n%s", got)
+	}
+	if _, err := os.Stat(filepath.Join(tmp, ".todo-graph")); err == nil {
+		t.Fatalf("expected default .todo-graph to be absent when using --output")
+	} else if !os.IsNotExist(err) {
+		t.Fatalf("stat default .todo-graph: %v", err)
+	}
+}
+
 func readFile(t *testing.T, path string) string {
 	t.Helper()
 	data, err := os.ReadFile(path)
