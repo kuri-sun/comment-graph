@@ -71,6 +71,13 @@ func TestScanRejectsInvalidIDs(t *testing.T) {
 	if len(errs) != 2 {
 		t.Fatalf("expected 2 scan errors, got %d: %+v", len(errs), errs)
 	}
+	if !strings.Contains(errs[0].Msg, "must not be empty") && !strings.Contains(errs[1].Msg, "must not be empty") {
+		t.Fatalf("expected empty id error, got %+v", errs)
+	}
+	if !strings.Contains(errs[0].Msg, "lowercase letters, digits, hyphens, or underscores") &&
+		!strings.Contains(errs[1].Msg, "lowercase letters, digits, hyphens, or underscores") {
+		t.Fatalf("expected charset error, got %+v", errs)
+	}
 }
 
 func TestScanDetectsDuplicateIDs(t *testing.T) {
