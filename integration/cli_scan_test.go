@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -11,10 +12,7 @@ import (
 // Integration: run `todo-graph scan` end-to-end against a temp TS repo.
 func TestCLIScanWritesTodoGraph(t *testing.T) {
 	tmp := t.TempDir()
-	writeFile(t, tmp, filepath.Join("src", "index.ts"), `// TODO:[#a] first
-// depends-on: #b
-// TODO:[#b] second
-`)
+	copyDir(t, fixturePath(t, "scan-basic"), tmp)
 
 	bin := buildCLI(t)
 	runCmd(t, bin, tmp, "scan")
@@ -25,17 +23,6 @@ func TestCLIScanWritesTodoGraph(t *testing.T) {
 	}
 	if !strings.Contains(got, "from: \"b\"\n    to: \"a\"") {
 		t.Fatalf("expected edge b->a, got:\n%s", got)
-	}
-}
-
-func writeFile(t *testing.T, dir, name, content string) {
-	t.Helper()
-	path := filepath.Join(dir, name)
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		t.Fatalf("mkdir: %v", err)
-	}
-	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
-		t.Fatalf("write file: %v", err)
 	}
 }
 
@@ -94,5 +81,35 @@ func findModuleRoot(t *testing.T) string {
 			t.Fatalf("go.mod not found")
 		}
 		dir = parent
+	}
+}
+
+func fixturePath(t *testing.T, name string) string {
+	t.Helper()
+	return filepath.Join(findModuleRoot(t), "integration", "testdata", name)
+}
+
+func copyDir(t *testing.T, src, dst string) {
+	t.Helper()
+	err := filepath.WalkDir(src, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		rel, err := filepath.Rel(src, path)
+		if err != nil {
+			return err
+		}
+		target := filepath.Join(dst, rel)
+		if d.IsDir() {
+			return os.MkdirAll(target, 0o755)
+		}
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		return os.WriteFile(target, data, 0o644)
+	})
+	if err != nil {
+		t.Fatalf("copy dir: %v", err)
 	}
 }
