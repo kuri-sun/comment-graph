@@ -84,9 +84,19 @@ func runScan(p printer, showTree bool) int {
 	p.resultLine(true)
 	p.infof("todos : %d", len(graph.Todos))
 	p.infof("genereated: %s", filepath.Join(root, ".todo-graph"))
+
 	if roots := findRoots(graph); len(roots) > 0 {
-		p.infof("roots : %s", strings.Join(roots, ", "))
+		fmt.Println()
+		p.section("TODO Graph (only root TODOs)")
+		for _, id := range roots {
+			if t, ok := graph.Todos[id]; ok {
+				fmt.Printf("  - [ ] %s (%s:%d)\n", id, t.File, t.Line)
+			} else {
+				fmt.Printf("  - [ ] %s\n", id)
+			}
+		}
 	}
+
 	if showTree {
 		fmt.Println()
 		p.section("Graph (tree)")
