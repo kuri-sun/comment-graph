@@ -28,6 +28,8 @@ todo-graph generate   # validates + writes .todo-graph
 todo-graph visualize  # shows a tree of the graph
 ```
 
+Pass `--dir <path>` to target a different repo root (helpful in scripts/CI).
+
 Rules:
 - TODO must start on a comment line (not inline after code).
 - Metadata must immediately follow the TODO (no blank/non-comment lines); only `@todo-id` and `@todo-deps` are allowed.
