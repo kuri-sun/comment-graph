@@ -103,7 +103,6 @@ func runCheck(p printer) int {
 	printErrorsSection := func() {
 		fmt.Fprintln(os.Stderr)
 		p.section("Errors")
-		fmt.Fprintln(os.Stderr)
 	}
 
 	report := engine.ValidateGraph(scanned, scanErrs)
