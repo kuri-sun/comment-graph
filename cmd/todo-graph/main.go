@@ -111,9 +111,9 @@ func runCheck(p printer) int {
 
 		switch {
 		case !fromOK && toOK:
-			return fmt.Sprintf("missing TODO %q (referenced by %q at %s:%d)", e.From, e.To, toTodo.File, toTodo.Line)
+			return fmt.Sprintf("missing %q (at %s:%d)", e.From, toTodo.File, toTodo.Line)
 		case fromOK && !toOK:
-			return fmt.Sprintf("missing TODO %q (referenced by %q at %s:%d)", e.To, e.From, fromTodo.File, fromTodo.Line)
+			return fmt.Sprintf("missing %q (at %s:%d)", e.To, fromTodo.File, fromTodo.Line)
 		case !fromOK && !toOK:
 			return fmt.Sprintf("missing TODOs %q and %q (edge present but ids undefined)", e.From, e.To)
 		default:
