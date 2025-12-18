@@ -24,15 +24,26 @@ func main() {
 	cmd := os.Args[1]
 	switch cmd {
 	case "generate":
-		if len(os.Args) > 2 {
-			fmt.Fprintf(os.Stderr, "unknown flag for generate: %s\n", strings.Join(os.Args[2:], " "))
+		dir, err := parseDirFlag(os.Args[2:], "generate")
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
-		os.Exit(runGenerate(p))
+		os.Exit(runGenerate(p, dir))
 	case "check":
-		os.Exit(runCheck(p))
+		dir, err := parseDirFlag(os.Args[2:], "check")
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		os.Exit(runCheck(p, dir))
 	case "visualize":
-		os.Exit(runVisualize(os.Args[2:]))
+		dir, err := parseDirFlag(os.Args[2:], "visualize")
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		os.Exit(runVisualize(dir))
 	case "help", "-h", "--help":
 		printHelp()
 	default:
@@ -42,8 +53,8 @@ func main() {
 	}
 }
 
-func runGenerate(p printer) int {
-	root, err := currentRoot()
+func runGenerate(p printer, dir string) int {
+	root, err := resolveRoot(dir)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to resolve working directory: %v\n", err)
 		return 1
@@ -74,8 +85,8 @@ func runGenerate(p printer) int {
 	return 0
 }
 
-func runCheck(p printer) int {
-	root, err := currentRoot()
+func runCheck(p printer, dir string) int {
+	root, err := resolveRoot(dir)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to resolve working directory: %v\n", err)
 		return 1
@@ -122,18 +133,13 @@ func runCheck(p printer) int {
 	return 0
 }
 
-func runVisualize(args []string) int {
-	if len(args) > 0 {
-		fmt.Fprintln(os.Stderr, "visualize no longer accepts format flags; mermaid output was removed")
-		return 1
-	}
-
+func runVisualize(dir string) int {
 	p := newPrinter()
-	if code := runGenerate(p); code != 0 {
+	if code := runGenerate(p, dir); code != 0 {
 		return code
 	}
 
-	root, err := currentRoot()
+	root, err := resolveRoot(dir)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to resolve working directory: %v\n", err)
 		return 1
@@ -306,6 +312,31 @@ func renderTree(g graph.Graph) []string {
 	return lines
 }
 
+func resolveRoot(dir string) (string, error) {
+	if dir == "" {
+		return currentRoot()
+	}
+	return filepath.Abs(dir)
+}
+
+func parseDirFlag(args []string, cmd string) (string, error) {
+	dir := ""
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
+		switch arg {
+		case "--dir":
+			if i+1 >= len(args) {
+				return "", fmt.Errorf("missing value for --dir")
+			}
+			dir = args[i+1]
+			i++
+		default:
+			return "", fmt.Errorf("unknown flag for %s: %s", cmd, arg)
+		}
+	}
+	return dir, nil
+}
+
 func currentRoot() (string, error) {
 	root, err := os.Getwd()
 	if err != nil {
@@ -319,6 +350,9 @@ func printHelp() {
 	fmt.Println()
 	fmt.Println("Usage:")
 	fmt.Println("  todo-graph generate     Scan repository and write .todo-graph")
+	fmt.Println("      --dir <path>        Set working directory (defaults to cwd)")
 	fmt.Println("  todo-graph check        Validate TODO graph consistency")
+	fmt.Println("      --dir <path>        Set working directory (defaults to cwd)")
 	fmt.Println("  todo-graph visualize    Show the graph as an indented tree")
+	fmt.Println("      --dir <path>        Set working directory (defaults to cwd)")
 }
