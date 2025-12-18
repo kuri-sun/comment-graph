@@ -122,6 +122,27 @@ func TestCLIVisualizeOutputsMermaid(t *testing.T) {
 	}
 }
 
+// Integration: visualize should support roots-only view.
+func TestCLIVisualizeRootsOnly(t *testing.T) {
+	tmp := t.TempDir()
+	copyFixtureFile(t, filepath.Join("sample", "index.ts"), tmp)
+	copyFixtureFile(t, filepath.Join("sample", "users.ts"), tmp)
+
+	bin := buildCLI(t)
+	runCmd(t, bin, tmp, "generate")
+
+	code, out := runCmdExpectExit(t, bin, tmp, 0, "visualize", "--roots-only")
+	if code != 0 {
+		t.Fatalf("expected exit 0, got %d\nout:\n%s", code, out)
+	}
+	if !strings.Contains(out, "- [] db-sample") {
+		t.Fatalf("expected root todo in output, got:\n%s", out)
+	}
+	if strings.Contains(out, "cache-sample") || strings.Contains(out, "cleanup-sample") {
+		t.Fatalf("expected only roots in output, got:\n%s", out)
+	}
+}
+
 // Integration: --dir should run commands against a different working directory.
 func TestCLIDirFlagTargetsRoot(t *testing.T) {
 	tmp := t.TempDir()

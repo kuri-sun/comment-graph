@@ -38,12 +38,12 @@ func main() {
 		}
 		os.Exit(runCheck(p, dir))
 	case "visualize":
-		dir, err := parseDirFlag(os.Args[2:], "visualize")
+		dir, rootsOnly, err := parseVisualizeFlags(os.Args[2:])
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
-		os.Exit(runVisualize(dir))
+		os.Exit(runVisualize(dir, rootsOnly))
 	case "help", "-h", "--help":
 		printHelp()
 	default:
@@ -141,7 +141,7 @@ func runCheck(p printer, dir string) int {
 	return 0
 }
 
-func runVisualize(dir string) int {
+func runVisualize(dir string, rootsOnly bool) int {
 	p := newPrinter()
 	if code := runGenerate(p, dir, ""); code != 0 {
 		return code
@@ -161,7 +161,7 @@ func runVisualize(dir string) int {
 
 	fmt.Println()
 	p.section("TODO Graph")
-	for _, line := range renderTree(g) {
+	for _, line := range renderTree(g, rootsOnly) {
 		fmt.Println("  " + line)
 	}
 	return 0
@@ -269,7 +269,7 @@ func findRoots(g graph.Graph) []string {
 	return roots
 }
 
-func renderTree(g graph.Graph) []string {
+func renderTree(g graph.Graph, rootsOnly bool) []string {
 	adj := make(map[string][]string)
 	for _, e := range g.Edges {
 		adj[e.From] = append(adj[e.From], e.To)
@@ -284,6 +284,19 @@ func renderTree(g graph.Graph) []string {
 			roots = append(roots, id)
 		}
 		sort.Strings(roots)
+	}
+
+	if rootsOnly {
+		lines := make([]string, 0, len(roots))
+		for _, r := range roots {
+			t, ok := g.Todos[r]
+			location := ""
+			if ok {
+				location = fmt.Sprintf(" (%s:%d)", t.File, t.Line)
+			}
+			lines = append(lines, fmt.Sprintf("- [] %s%s", r, location))
+		}
+		return lines
 	}
 
 	var lines []string
@@ -383,6 +396,27 @@ func parseDirFlag(args []string, cmd string) (string, error) {
 	return dir, nil
 }
 
+func parseVisualizeFlags(args []string) (string, bool, error) {
+	dir := ""
+	rootsOnly := false
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
+		switch arg {
+		case "--dir":
+			if i+1 >= len(args) {
+				return "", false, fmt.Errorf("missing value for --dir")
+			}
+			dir = args[i+1]
+			i++
+		case "--roots-only":
+			rootsOnly = true
+		default:
+			return "", false, fmt.Errorf("unknown flag for visualize: %s", arg)
+		}
+	}
+	return dir, rootsOnly, nil
+}
+
 func printHelp() {
 	fmt.Printf("todo-graph CLI (version %s)\n", version)
 	fmt.Println()
@@ -394,4 +428,5 @@ func printHelp() {
 	fmt.Println("      --dir <path>        Target a different root")
 	fmt.Println("  todo-graph visualize    Show the graph as an indented tree")
 	fmt.Println("      --dir <path>        Target a different root (runs generate first)")
+	fmt.Println("      --roots-only        Show only root TODOs (no descendants)")
 }
