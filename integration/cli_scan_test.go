@@ -87,6 +87,42 @@ func TestCLICheckDetectsDrift(t *testing.T) {
 	}
 }
 
+func TestCLICheckDetectsIsolated(t *testing.T) {
+	tmp := t.TempDir()
+	copyFixtureFile(t, filepath.Join("isolated", "index.ts"), tmp)
+
+	bin := buildCLI(t)
+	runCmd(t, bin, tmp, "scan")
+
+	code, out := runCmdExpectExit(t, bin, tmp, 3, "check")
+	if code != 3 {
+		t.Fatalf("expected exit 3, got %d\nout:\n%s", code, out)
+	}
+	if !strings.Contains(out, "isolated TODOs") {
+		t.Fatalf("expected isolated TODOs output, got:\n%s", out)
+	}
+}
+
+func TestCLIVisualizeOutputsMermaid(t *testing.T) {
+	tmp := t.TempDir()
+	copyFixtureFile(t, "index.ts", tmp)
+	copyFixtureFile(t, "user.ts", tmp)
+
+	bin := buildCLI(t)
+	runCmd(t, bin, tmp, "scan")
+
+	code, out := runCmdExpectExit(t, bin, tmp, 0, "visualize", "--format", "mermaid")
+	if code != 0 {
+		t.Fatalf("expected exit 0, got %d\nout:\n%s", code, out)
+	}
+	if !strings.Contains(out, "graph TD") {
+		t.Fatalf("expected mermaid header, got:\n%s", out)
+	}
+	if !strings.Contains(out, "db-migration --> cache-user") || !strings.Contains(out, "cache-user --> cleanup-legacy") {
+		t.Fatalf("expected edges in mermaid output, got:\n%s", out)
+	}
+}
+
 func readFile(t *testing.T, path string) string {
 	t.Helper()
 	data, err := os.ReadFile(path)
