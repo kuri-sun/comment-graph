@@ -1,4 +1,5 @@
 // TODO:[#cleanup-legacy] remove legacy endpoints
+// depends-on: #cache-user
 
 import { getUser } from "./user"
 

@@ -24,6 +24,9 @@ func TestCLIScanWritesTodoGraph(t *testing.T) {
 	if !strings.Contains(got, "from: \"db-migration\"\n    to: \"cache-user\"") {
 		t.Fatalf("expected edge db-migration->cache-user, got:\n%s", got)
 	}
+	if !strings.Contains(got, "from: \"cache-user\"\n    to: \"cleanup-legacy\"") {
+		t.Fatalf("expected edge cache-user->cleanup-legacy, got:\n%s", got)
+	}
 }
 
 func readFile(t *testing.T, path string) string {
