@@ -1,7 +1,6 @@
 package integration
 
 import (
-	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -12,17 +11,17 @@ import (
 // Integration: run `todo-graph scan` end-to-end against a temp TS repo.
 func TestCLIScanWritesTodoGraph(t *testing.T) {
 	tmp := t.TempDir()
-	copyDir(t, fixturePath(t, "scan-basic"), tmp)
+	copyFixtureFile(t, "index.ts", tmp)
 
 	bin := buildCLI(t)
 	runCmd(t, bin, tmp, "scan")
 
 	got := readFile(t, filepath.Join(tmp, ".todo-graph"))
-	if !strings.Contains(got, "\n  a:\n") || !strings.Contains(got, "\n  b:\n") {
+	if !strings.Contains(got, "\n  cache-user:\n") || !strings.Contains(got, "\n  db-migration:\n") {
 		t.Fatalf("unexpected todos section:\n%s", got)
 	}
-	if !strings.Contains(got, "from: \"b\"\n    to: \"a\"") {
-		t.Fatalf("expected edge b->a, got:\n%s", got)
+	if !strings.Contains(got, "from: \"db-migration\"\n    to: \"cache-user\"") {
+		t.Fatalf("expected edge db-migration->cache-user, got:\n%s", got)
 	}
 }
 
@@ -84,32 +83,18 @@ func findModuleRoot(t *testing.T) string {
 	}
 }
 
-func fixturePath(t *testing.T, name string) string {
+func copyFixtureFile(t *testing.T, name, dst string) {
 	t.Helper()
-	return filepath.Join(findModuleRoot(t), "integration", "testdata", name)
-}
-
-func copyDir(t *testing.T, src, dst string) {
-	t.Helper()
-	err := filepath.WalkDir(src, func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		rel, err := filepath.Rel(src, path)
-		if err != nil {
-			return err
-		}
-		target := filepath.Join(dst, rel)
-		if d.IsDir() {
-			return os.MkdirAll(target, 0o755)
-		}
-		data, err := os.ReadFile(path)
-		if err != nil {
-			return err
-		}
-		return os.WriteFile(target, data, 0o644)
-	})
+	src := filepath.Join(findModuleRoot(t), "integration", "testdata", name)
+	data, err := os.ReadFile(src)
 	if err != nil {
-		t.Fatalf("copy dir: %v", err)
+		t.Fatalf("read fixture: %v", err)
+	}
+	target := filepath.Join(dst, name)
+	if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	if err := os.WriteFile(target, data, 0o644); err != nil {
+		t.Fatalf("write fixture: %v", err)
 	}
 }
