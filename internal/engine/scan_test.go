@@ -453,6 +453,42 @@ func TestScanRejectsSpaceSeparatedDeps(t *testing.T) {
 	}
 }
 
+func TestScanMixedLanguages(t *testing.T) {
+	dir := t.TempDir()
+	copyFixture(t, filepath.Join("mixed", "go"), filepath.Join(dir, "go"))
+	copyFixture(t, filepath.Join("mixed", "ts"), filepath.Join(dir, "ts"))
+	copyFixture(t, filepath.Join("mixed", "js"), filepath.Join(dir, "js"))
+
+	g, errs, err := Scan(dir)
+	if err != nil {
+		t.Fatalf("scan error: %v", err)
+	}
+	if len(errs) != 0 {
+		t.Fatalf("unexpected scan errors: %+v", errs)
+	}
+	if len(g.Todos) != 6 {
+		t.Fatalf("expected 6 todos, got %d", len(g.Todos))
+	}
+
+	wantEdges := map[string]bool{
+		"go-root->ts-root":   true,
+		"js-root->ts-root":   true,
+		"js-root->js-helper": true,
+		"ts-root->go-root":   true,
+	}
+
+	for _, e := range g.Edges {
+		key := e.From + "->" + e.To
+		if wantEdges[key] {
+			delete(wantEdges, key)
+		}
+	}
+
+	if len(wantEdges) != 0 {
+		t.Fatalf("missing edges: %+v", wantEdges)
+	}
+}
+
 func writeFile(t *testing.T, dir, name, content string) {
 	t.Helper()
 	path := filepath.Join(dir, name)
@@ -461,5 +497,52 @@ func writeFile(t *testing.T, dir, name, content string) {
 	}
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		t.Fatalf("write file: %v", err)
+	}
+}
+
+func copyFixture(t *testing.T, srcRel, dst string) {
+	t.Helper()
+	src := filepath.Join(findModuleRoot(t), "integration", "testdata", srcRel)
+	err := filepath.Walk(src, func(path string, info os.FileInfo, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		rel, err := filepath.Rel(src, path)
+		if err != nil {
+			return err
+		}
+		target := filepath.Join(dst, rel)
+		if info.IsDir() {
+			return os.MkdirAll(target, 0o755)
+		}
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
+			return err
+		}
+		return os.WriteFile(target, data, 0o644)
+	})
+	if err != nil {
+		t.Fatalf("copy fixture: %v", err)
+	}
+}
+
+func findModuleRoot(t *testing.T) string {
+	t.Helper()
+	dir, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("getwd: %v", err)
+	}
+	for {
+		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
+			return dir
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			t.Fatalf("go.mod not found")
+		}
+		dir = parent
 	}
 }
