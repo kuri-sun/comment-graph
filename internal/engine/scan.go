@@ -122,7 +122,11 @@ func scanFile(path, rel string) ([]graph.Edge, []graph.Todo, []ScanError, error)
 			continue
 		}
 		if !todoIDPattern.MatchString(rawID) {
-			errs = append(errs, ScanError{File: rel, Line: i + 1, Msg: fmt.Sprintf("invalid TODO id %q", rawID)})
+			errs = append(errs, ScanError{
+				File: rel,
+				Line: i + 1,
+				Msg:  fmt.Sprintf("TODO id %q must use lowercase letters, digits, or hyphens", rawID),
+			})
 			continue
 		}
 
@@ -212,7 +216,11 @@ func parseIDs(raw string, line int, file string) ([]string, []ScanError) {
 			continue
 		}
 		if !todoIDPattern.MatchString(f) {
-			errs = append(errs, ScanError{File: file, Line: line, Msg: fmt.Sprintf("invalid id %q", f)})
+			errs = append(errs, ScanError{
+				File: file,
+				Line: line,
+				Msg:  fmt.Sprintf("id %q must use lowercase letters, digits, or hyphens", f),
+			})
 			continue
 		}
 		ids = append(ids, f)
