@@ -111,3 +111,17 @@ func TestValidateGraphDetectsSelfCycle(t *testing.T) {
 		t.Fatalf("unexpected self cycle: %v", report.Cycles[0])
 	}
 }
+
+func TestValidateGraphScanErrorsSurfaced(t *testing.T) {
+	scanErrs := []ScanError{
+		{File: "a.go", Line: 1, Msg: "bad"},
+	}
+	report := ValidateGraph(graph.Graph{}, scanErrs)
+
+	if len(report.ScanErrors) != 1 {
+		t.Fatalf("expected 1 scan error, got %d", len(report.ScanErrors))
+	}
+	if report.ScanErrors[0].Msg != "bad" {
+		t.Fatalf("unexpected scan error: %+v", report.ScanErrors[0])
+	}
+}
