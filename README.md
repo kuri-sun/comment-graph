@@ -31,16 +31,14 @@ cache.ts
 
 ```ts
 // TODO: cache-user add cache layer for user reads
-// deps: #db-migration
+// DEPS: #db-migration
 function cacheUser() {
 ```
 
 Then run:
 
 ```
-todo-graph generate   # writes .todo-graph (validates first)
-todo-graph check      # validates references/cycles/drift
-todo-graph visualize  # shows an indented tree of the graph
+todo-graph visualize  # shows a tree of the graph
 ```
 
 IDs must use lowercase letters/digits/hyphens/underscores. If no `[#id]` is provided, an ID like `todo-<line>` is generated.
