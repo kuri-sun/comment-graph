@@ -27,7 +27,7 @@ func main() {
 		showTree := false
 		for _, arg := range os.Args[2:] {
 			switch arg {
-			case "--tree", "-t":
+			case "--tree", "-t", "--full":
 				showTree = true
 			default:
 				fmt.Fprintf(os.Stderr, "unknown flag for scan: %s\n", arg)
@@ -87,7 +87,7 @@ func runScan(p printer, showTree bool) int {
 
 	if roots := findRoots(graph); len(roots) > 0 {
 		fmt.Println()
-		p.section("TODO Graph (roots; use --tree for full)")
+		p.section("TODO Graph (roots; use --full for tree)")
 		for _, id := range roots {
 			if t, ok := graph.Todos[id]; ok {
 				fmt.Printf("  - [ ] %s (%s:%d)\n", id, t.File, t.Line)
@@ -287,7 +287,7 @@ func printHelp() {
 	fmt.Println()
 	fmt.Println("Usage:")
 	fmt.Println("  todo-graph scan       Scan repository and update .todo-graph")
-	fmt.Println("      --tree, -t        Print tree view of graph")
+	fmt.Println("      --full, --tree, -t  Print full tree view of graph")
 	fmt.Println("  todo-graph check      Validate TODO graph consistency")
 	fmt.Println("  todo-graph visualize  Output graph in a given format")
 }
