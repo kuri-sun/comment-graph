@@ -88,14 +88,12 @@ func runScan(p printer, showTree bool) int {
 	if showTree {
 		fmt.Println()
 		p.section("TODO Graph")
-		fmt.Println()
 		for _, line := range renderTree(graph) {
 			fmt.Println("  " + line)
 		}
 	} else if roots := findRoots(graph); len(roots) > 0 {
 		fmt.Println()
 		p.section("TODO Graph")
-		fmt.Println()
 		for _, id := range roots {
 			if t, ok := graph.Todos[id]; ok {
 				fmt.Printf("  - [ ] %s (%s:%d)\n", id, t.File, t.Line)
