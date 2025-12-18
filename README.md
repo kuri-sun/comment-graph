@@ -1,6 +1,6 @@
 # todo-graph
 
-A small CLI that scans your codebase for `TODO` comments, builds a dependency graph, and lets you validate or visualize it.
+A small CLI that scans your codebase for `TODO` comments, builds a dependency graph, and makes it easy to track and review the.
 
 ## Installation
 
