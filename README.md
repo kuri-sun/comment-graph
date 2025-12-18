@@ -18,10 +18,23 @@ Run commands in the repo you want to track TODOs:
 
 ### Quick start
 
+Add TODOs with optional IDs and dependencies in your code:
+
 ```
-// TODO[#id] short description
-// deps: #a, #b
+// TODO: cache-user add cache layer for user reads
+// deps: #db-migration
+
+// TODO: cleanup-legacy remove legacy endpoints
+// deps: #cache-user
 ```
 
 IDs must use lowercase letters/digits/hyphens/underscores. If no `[#id]` is provided, an ID is derived from the description.
 Only `deps` metadata is parsed (one or more IDs, comma-separated, each prefixed with `#`).
+
+Then run:
+
+```
+todo-graph generate   # writes .todo-graph
+todo-graph check      # validates references/cycles/drift
+todo-graph visualize  # shows an indented tree of the graph
+```
