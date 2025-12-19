@@ -221,35 +221,35 @@ func scanFile(path, rel string, todoPattern *regexp.Regexp) ([]graph.Edge, []gra
 			}
 		}
 
-	// break association on blank or non-comment
-        if current != nil && (trimmed == "" || (!comment && !todoPattern.MatchString(trimmed))) {
-            if current.id == "" && !current.invalid {
-                errs = append(errs, ScanError{File: rel, Line: current.line, Msg: "TODO id is required (add @todo-id)"})
-            } else if !current.invalid {
-                todos[current.id] = graph.Todo{ID: current.id, File: rel, Line: current.line}
-                for _, dep := range current.deps {
+		// break association on blank or non-comment
+		if current != nil && (trimmed == "" || (!comment && !todoPattern.MatchString(trimmed))) {
+			if current.id == "" && !current.invalid {
+				errs = append(errs, ScanError{File: rel, Line: current.line, Msg: "TODO id is required (add @todo-id)"})
+			} else if !current.invalid {
+				todos[current.id] = graph.Todo{ID: current.id, File: rel, Line: current.line}
+				for _, dep := range current.deps {
 					edges = append(edges, graph.Edge{From: dep, To: current.id, Type: "blocks"})
 				}
 			}
 			current = nil
 		}
 
-        // inline keyword not allowed (only if a comment marker is present)
-        if todoPattern.MatchString(line) && !isCommentStart && !inBlock &&
-            (strings.Contains(line, "//") || strings.Contains(line, "#") || strings.Contains(line, "--") || strings.Contains(line, "/*")) {
-            errs = append(errs, ScanError{File: rel, Line: i + 1, Msg: "TODO must start at a comment line"})
-            continue
-        }
+		// inline keyword not allowed (only if a comment marker is present)
+		if todoPattern.MatchString(line) && !isCommentStart && !inBlock &&
+			(strings.Contains(line, "//") || strings.Contains(line, "#") || strings.Contains(line, "--") || strings.Contains(line, "/*")) {
+			errs = append(errs, ScanError{File: rel, Line: i + 1, Msg: "TODO must start at a comment line"})
+			continue
+		}
 
 		if !comment {
 			continue
 		}
 
-        trimmedNoPrefix := strings.TrimSpace(commentLine.ReplaceAllString(line, ""))
-        lowerTrimmed := strings.ToLower(trimmedNoPrefix)
-        if strings.HasPrefix(lowerTrimmed, "@todo-") {
-            // metadata handled below
-        } else if todoPattern.MatchString(trimmedNoPrefix) {
+		trimmedNoPrefix := strings.TrimSpace(commentLine.ReplaceAllString(line, ""))
+		lowerTrimmed := strings.ToLower(trimmedNoPrefix)
+		if strings.HasPrefix(lowerTrimmed, "@todo-") {
+			// metadata handled below
+		} else if todoPattern.MatchString(trimmedNoPrefix) {
 			// close previous pending
 			if current != nil {
 				if current.id == "" && !current.invalid {
