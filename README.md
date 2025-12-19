@@ -25,11 +25,6 @@ Then run:
 
 ```
 todo-graph generate   # writes .todo-graph file.
-todo-graph deps set --id <todo> --depends-on <ids>   # update @todo-deps in source
-todo-graph deps detach --id <todo> --target <id>     # remove a parent from @todo-deps
-todo-graph deps detach --id <todo> --all             # remove all parents from @todo-deps
-todo-graph fix        # auto-add @todo-id placeholders for missing TODOs
-todo-graph view       # prints an indented tree of TODOs
 ```
 
 Will generate a yaml file:

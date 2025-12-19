@@ -4,9 +4,33 @@
 npm install --save-dev todo-graph
 # or
 yarn add -D todo-graph
+# or
+pnpm add -D todo-graph
 ```
 
 This package includes a Node wrapper that downloads the matching `todo-graph` binary on install. No other dependencies are needed.
+
+## Usage
+
+After install, the `todo-graph` binary is available via `npx`/`yarn dlx` or from `node_modules/.bin`:
+
+```bash
+npx todo-graph generate --dir .
+npx todo-graph check --dir .
+```
+
+Or add a script:
+
+```json
+{
+  "scripts": {
+    "todo-graph:generate": "todo-graph generate --dir .",
+    "todo-graph:check": "todo-graph check --dir ."
+  }
+}
+```
+
+Run it with `npm run todo-graph:check` (or `yarn`/`pnpm`).
 
 ## Quick start
 
