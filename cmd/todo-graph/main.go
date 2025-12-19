@@ -37,13 +37,13 @@ func main() {
 			os.Exit(1)
 		}
 		os.Exit(runCheck(p, dir))
-	case "visualize":
-		dir, rootsOnly, err := parseVisualizeFlags(os.Args[2:])
+	case "view":
+		dir, rootsOnly, err := parseViewFlags(os.Args[2:])
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
-		os.Exit(runVisualize(dir, rootsOnly))
+		os.Exit(runView(dir, rootsOnly))
 	case "help", "-h", "--help":
 		printHelp()
 	default:
@@ -141,7 +141,7 @@ func runCheck(p printer, dir string) int {
 	return 0
 }
 
-func runVisualize(dir string, rootsOnly bool) int {
+func runView(dir string, rootsOnly bool) int {
 	p := newPrinter()
 	if code := runGenerate(p, dir, ""); code != 0 {
 		return code
@@ -396,7 +396,7 @@ func parseDirFlag(args []string, cmd string) (string, error) {
 	return dir, nil
 }
 
-func parseVisualizeFlags(args []string) (string, bool, error) {
+func parseViewFlags(args []string) (string, bool, error) {
 	dir := ""
 	rootsOnly := false
 	for i := 0; i < len(args); i++ {
@@ -411,7 +411,7 @@ func parseVisualizeFlags(args []string) (string, bool, error) {
 		case "--roots-only":
 			rootsOnly = true
 		default:
-			return "", false, fmt.Errorf("unknown flag for visualize: %s", arg)
+			return "", false, fmt.Errorf("unknown flag for view: %s", arg)
 		}
 	}
 	return dir, rootsOnly, nil
@@ -426,7 +426,7 @@ func printHelp() {
 	fmt.Println("      --output <path>     Write .todo-graph to a different path (for CI artifacts)")
 	fmt.Println("  todo-graph check        Validate TODO graph consistency")
 	fmt.Println("      --dir <path>        Target a different root")
-	fmt.Println("  todo-graph visualize    Show the graph as an indented tree")
+	fmt.Println("  todo-graph view         Show the graph as an indented tree")
 	fmt.Println("      --dir <path>        Target a different root (runs generate first)")
 	fmt.Println("      --roots-only        Show only root TODOs (no descendants)")
 }
