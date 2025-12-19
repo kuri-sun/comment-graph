@@ -241,7 +241,4 @@ func printHelp() {
 	fmt.Println("      --dir <path>        Target a different root")
 	fmt.Println("  todo-graph fix          Auto-add @todo-id placeholders for missing TODO ids")
 	fmt.Println("      --dir <path>        Target a different root")
-	fmt.Println("  todo-graph view         Show the graph as an indented tree")
-	fmt.Println("      --dir <path>        Target a different root (runs generate first)")
-	fmt.Println("      --roots-only        Show only root TODOs (no descendants)")
 }
