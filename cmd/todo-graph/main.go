@@ -69,13 +69,6 @@ func main() {
 			os.Exit(1)
 		}
 		os.Exit(runFix(p, dir))
-	case "view":
-		dir, rootsOnly, err := parseViewFlags(os.Args[2:])
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
-		}
-		os.Exit(runView(dir, rootsOnly))
 	case "help", "-h", "--help":
 		printHelp()
 	default:
@@ -323,32 +316,6 @@ func runFix(p printer, dir string) int {
 	return 0
 }
 
-func runView(dir string, rootsOnly bool) int {
-	p := newPrinter()
-	if code := runGenerate(p, dir, ""); code != 0 {
-		return code
-	}
-
-	root, err := resolveRoot(dir)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to resolve working directory: %v\n", err)
-		return 1
-	}
-
-	g, err := engine.ReadGraph(root)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to read .todo-graph (run todo-graph generate): %v\n", err)
-		return 1
-	}
-
-	fmt.Println()
-	p.section("TODO Graph")
-	for _, line := range renderTree(g, rootsOnly) {
-		fmt.Println("  " + line)
-	}
-	return 0
-}
-
 // validateAndReport renders validation errors consistently. Returns (exitCode, failed).
 func validateAndReport(p printer, header string, scanned graph.Graph, report engine.CheckReport, fileGraph *graph.Graph, checkDrift bool) (int, bool) {
 	printFailureHeader := func() {
@@ -449,70 +416,6 @@ func findRoots(g graph.Graph) []string {
 	}
 	sort.Strings(roots)
 	return roots
-}
-
-func renderTree(g graph.Graph, rootsOnly bool) []string {
-	adj := make(map[string][]string)
-	for _, e := range g.Edges {
-		adj[e.From] = append(adj[e.From], e.To)
-	}
-	for k := range adj {
-		sort.Strings(adj[k])
-	}
-
-	roots := findRoots(g)
-	if len(roots) == 0 {
-		for id := range g.Todos {
-			roots = append(roots, id)
-		}
-		sort.Strings(roots)
-	}
-
-	if rootsOnly {
-		lines := make([]string, 0, len(roots))
-		for _, r := range roots {
-			t, ok := g.Todos[r]
-			location := ""
-			if ok {
-				location = fmt.Sprintf(" (%s:%d)", t.File, t.Line)
-			}
-			lines = append(lines, fmt.Sprintf("- [] %s%s", r, location))
-		}
-		return lines
-	}
-
-	var lines []string
-	visited := make(map[string]bool)
-
-	var dfs func(id string, depth int, stack map[string]bool)
-	dfs = func(id string, depth int, stack map[string]bool) {
-		t, ok := g.Todos[id]
-		location := ""
-		if ok {
-			location = fmt.Sprintf(" (%s:%d)", t.File, t.Line)
-		}
-		prefix := strings.Repeat("    ", depth)
-		if stack[id] {
-			lines = append(lines, fmt.Sprintf("%s- [] %s%s [cycle]", prefix, id, location))
-			return
-		}
-		if visited[id] && depth > 0 {
-			lines = append(lines, fmt.Sprintf("%s- [] %s%s [seen]", prefix, id, location))
-			return
-		}
-		lines = append(lines, fmt.Sprintf("%s- [] %s%s", prefix, id, location))
-		stack[id] = true
-		visited[id] = true
-		for _, next := range adj[id] {
-			dfs(next, depth+1, stack)
-		}
-		delete(stack, id)
-	}
-
-	for _, r := range roots {
-		dfs(r, 0, make(map[string]bool))
-	}
-	return lines
 }
 
 func resolveRoot(dir string) (string, error) {
@@ -663,27 +566,6 @@ func parseDepsDetachFlags(args []string) (string, string, string, bool, error) {
 	return dir, id, target, detachAll, nil
 }
 
-func parseViewFlags(args []string) (string, bool, error) {
-	dir := ""
-	rootsOnly := false
-	for i := 0; i < len(args); i++ {
-		arg := args[i]
-		switch arg {
-		case "--dir":
-			if i+1 >= len(args) {
-				return "", false, fmt.Errorf("missing value for --dir")
-			}
-			dir = args[i+1]
-			i++
-		case "--roots-only":
-			rootsOnly = true
-		default:
-			return "", false, fmt.Errorf("unknown flag for view: %s", arg)
-		}
-	}
-	return dir, rootsOnly, nil
-}
-
 func printHelp() {
 	fmt.Printf("todo-graph CLI (version %s)\n", version)
 	fmt.Println()
@@ -703,7 +585,4 @@ func printHelp() {
 	fmt.Println("      --dir <path>        Target a different root")
 	fmt.Println("  todo-graph fix          Auto-add @todo-id placeholders for missing TODO ids")
 	fmt.Println("      --dir <path>        Target a different root")
-	fmt.Println("  todo-graph view         Show the graph as an indented tree")
-	fmt.Println("      --dir <path>        Target a different root (runs generate first)")
-	fmt.Println("      --roots-only        Show only root TODOs (no descendants)")
 }
