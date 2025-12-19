@@ -118,6 +118,13 @@ func runCheck(p printer, dir string) int {
 		p.section("Errors")
 	}
 
+	report := engine.ValidateGraph(scanned, scanErrs)
+	if len(report.ScanErrors) > 0 || len(report.UndefinedEdges) > 0 || len(report.Cycles) > 0 || len(report.Isolated) > 0 {
+		if code, failed := validateAndReport(p, scanned, report, nil, false); failed {
+			return code
+		}
+	}
+
 	fileGraph, err := engine.ReadGraph(root)
 	if err != nil {
 		printFailureHeader()
@@ -127,7 +134,6 @@ func runCheck(p printer, dir string) int {
 		return 3
 	}
 
-	report := engine.ValidateGraph(scanned, scanErrs)
 	if code, failed := validateAndReport(p, scanned, report, &fileGraph, true); failed {
 		return code
 	}
