@@ -15,10 +15,15 @@ type FixReport struct {
 	Others  []ScanError
 }
 
-// FixMissingIDs scans for TODOs without @todo-id and inserts a generated id placeholder.
-// Placeholders are derived from the relative file path and line number to ensure stability.
+// FixMissingIDs scans using default keywords.
 func FixMissingIDs(root string) (FixReport, error) {
-	graph, errs, err := Scan(root)
+	return FixMissingIDsWithKeywords(root, nil)
+}
+
+// FixMissingIDsWithKeywords scans for TODOs without @todo-id and inserts a generated id placeholder.
+// Placeholders are derived from the relative file path and line number to ensure stability.
+func FixMissingIDsWithKeywords(root string, keywords []string) (FixReport, error) {
+	graph, errs, err := ScanWithKeywords(root, keywords)
 	if err != nil {
 		return FixReport{}, err
 	}

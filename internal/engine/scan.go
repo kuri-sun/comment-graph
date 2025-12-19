@@ -13,12 +13,31 @@ import (
 )
 
 var (
-	todoLinePattern = regexp.MustCompile(`TODO:?`)
+	defaultKeywords = []string{"TODO", "FIXME", "NOTE", "WARNING", "HACK", "CHANGED", "REVIEW"}
 	todoIDPattern   = regexp.MustCompile(`^[a-z0-9_-]+$`)
 	commentLine     = regexp.MustCompile(`^\s*(//|#|--|/\*|{/\*|<!--|\*|"""|''')`)
 )
 
 var commentClosers = []string{"*/", "*/}", "-->", `"""`, `'''`}
+
+func compileTodoPattern(keywords []string) (*regexp.Regexp, error) {
+	if len(keywords) == 0 {
+		return nil, fmt.Errorf("at least one keyword is required")
+	}
+	var parts []string
+	for _, k := range keywords {
+		k = strings.TrimSpace(k)
+		if k == "" {
+			continue
+		}
+		parts = append(parts, regexp.QuoteMeta(k))
+	}
+	if len(parts) == 0 {
+		return nil, fmt.Errorf("at least one keyword is required")
+	}
+	pat := fmt.Sprintf(`(?i)\b(%s)\b:?`, strings.Join(parts, "|"))
+	return regexp.Compile(pat)
+}
 
 // ScanError provides contextual information for parse failures.
 type ScanError struct {
@@ -27,13 +46,26 @@ type ScanError struct {
 	Msg  string
 }
 
-// Scan walks the repository, parses TODO blocks, and returns the graph.
+// Scan walks the repository using default keywords.
 func Scan(root string) (graph.Graph, []ScanError, error) {
+	return ScanWithKeywords(root, defaultKeywords)
+}
+
+// ScanWithKeywords walks the repository, parses TODO blocks, and returns the graph.
+// keywords defines which markers are recognized (e.g. TODO, FIXME).
+func ScanWithKeywords(root string, keywords []string) (graph.Graph, []ScanError, error) {
+	if len(keywords) == 0 {
+		keywords = defaultKeywords
+	}
+	pattern, err := compileTodoPattern(keywords)
+	if err != nil {
+		return graph.Graph{}, nil, err
+	}
 	todos := make(map[string]graph.Todo)
 	var edges []graph.Edge
 	var errs []ScanError
 
-	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, walkErr error) error {
+	err = filepath.WalkDir(root, func(path string, d fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			return walkErr
 		}
@@ -54,7 +86,7 @@ func Scan(root string) (graph.Graph, []ScanError, error) {
 		if err != nil {
 			return err
 		}
-		fileEdges, fileTodos, fileErrs, err := scanFile(path, rel)
+		fileEdges, fileTodos, fileErrs, err := scanFile(path, rel, pattern)
 		if err != nil {
 			return err
 		}
@@ -96,7 +128,7 @@ func shouldSkipDir(name string) bool {
 	}
 }
 
-func scanFile(path, rel string) ([]graph.Edge, []graph.Todo, []ScanError, error) {
+func scanFile(path, rel string, todoPattern *regexp.Regexp) ([]graph.Edge, []graph.Todo, []ScanError, error) {
 	content, err := os.ReadFile(path)
 	if err != nil {
 		return nil, nil, nil, err
@@ -139,11 +171,11 @@ func scanFile(path, rel string) ([]graph.Edge, []graph.Todo, []ScanError, error)
 
 		comment := inBlock || isCommentStart
 
-		// inline comment markers with TODO after code
+		// inline comment markers with TODO/keyword after code
 		if !comment {
-			inlineMarkers := []string{"//", "#", "--", "/*"}
+			inlineMarkers := []string{"//", "#", "--", "/*", "{/*"}
 			for _, m := range inlineMarkers {
-				if idx := strings.Index(line, m); idx > 0 && strings.Contains(line[idx:], "TODO") {
+				if idx := strings.Index(line, m); idx > 0 && todoPattern.MatchString(line[idx:]) {
 					errs = append(errs, ScanError{File: rel, Line: i + 1, Msg: "TODO must start at a comment line"})
 					skip = true
 					break
@@ -189,32 +221,35 @@ func scanFile(path, rel string) ([]graph.Edge, []graph.Todo, []ScanError, error)
 			}
 		}
 
-		// break association on blank or non-comment
-		if current != nil && (trimmed == "" || (!comment && !todoLinePattern.MatchString(trimmed))) {
-			if current.id == "" && !current.invalid {
-				errs = append(errs, ScanError{File: rel, Line: current.line, Msg: "TODO id is required (add @todo-id)"})
-			} else if !current.invalid {
-				todos[current.id] = graph.Todo{ID: current.id, File: rel, Line: current.line}
-				for _, dep := range current.deps {
+	// break association on blank or non-comment
+        if current != nil && (trimmed == "" || (!comment && !todoPattern.MatchString(trimmed))) {
+            if current.id == "" && !current.invalid {
+                errs = append(errs, ScanError{File: rel, Line: current.line, Msg: "TODO id is required (add @todo-id)"})
+            } else if !current.invalid {
+                todos[current.id] = graph.Todo{ID: current.id, File: rel, Line: current.line}
+                for _, dep := range current.deps {
 					edges = append(edges, graph.Edge{From: dep, To: current.id, Type: "blocks"})
 				}
 			}
 			current = nil
 		}
 
-		// inline TODO not allowed (only if a comment marker is present)
-		if todoLinePattern.MatchString(line) && !isCommentStart && !inBlock &&
-			(strings.Contains(line, "//") || strings.Contains(line, "#") || strings.Contains(line, "--") || strings.Contains(line, "/*")) {
-			errs = append(errs, ScanError{File: rel, Line: i + 1, Msg: "TODO must start at a comment line"})
-			continue
-		}
+        // inline keyword not allowed (only if a comment marker is present)
+        if todoPattern.MatchString(line) && !isCommentStart && !inBlock &&
+            (strings.Contains(line, "//") || strings.Contains(line, "#") || strings.Contains(line, "--") || strings.Contains(line, "/*")) {
+            errs = append(errs, ScanError{File: rel, Line: i + 1, Msg: "TODO must start at a comment line"})
+            continue
+        }
 
 		if !comment {
 			continue
 		}
 
-		match := todoLinePattern.FindStringSubmatch(line)
-		if match != nil {
+        trimmedNoPrefix := strings.TrimSpace(commentLine.ReplaceAllString(line, ""))
+        lowerTrimmed := strings.ToLower(trimmedNoPrefix)
+        if strings.HasPrefix(lowerTrimmed, "@todo-") {
+            // metadata handled below
+        } else if todoPattern.MatchString(trimmedNoPrefix) {
 			// close previous pending
 			if current != nil {
 				if current.id == "" && !current.invalid {
@@ -227,11 +262,7 @@ func scanFile(path, rel string) ([]graph.Edge, []graph.Todo, []ScanError, error)
 				}
 			}
 
-			current = &pending{
-				line: i + 1,
-				id:   "",
-				deps: nil,
-			}
+			current = &pending{line: i + 1}
 			continue
 		}
 

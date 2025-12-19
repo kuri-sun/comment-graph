@@ -7,14 +7,14 @@ import (
 	"github.com/kuri-sun/todo-graph/internal/engine"
 )
 
-func runDepsSet(p printer, dir, child string, parents []string) int {
+func runDepsSet(p printer, dir, child string, parents, keywords []string) int {
 	root, err := resolveRoot(dir)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to resolve working directory: %v\n", err)
 		return 1
 	}
 
-	scanned, scanErrs, err := engine.Scan(root)
+	scanned, scanErrs, err := engine.ScanWithKeywords(root, keywords)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "scan failed: %v\n", err)
 		p.resultLine(false)
@@ -32,7 +32,7 @@ func runDepsSet(p printer, dir, child string, parents []string) int {
 		return 1
 	}
 
-	updated, _, err := engine.Scan(root)
+	updated, _, err := engine.ScanWithKeywords(root, keywords)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "rescan failed after update: %v\n", err)
 		p.resultLine(false)
@@ -51,14 +51,14 @@ func runDepsSet(p printer, dir, child string, parents []string) int {
 	return 0
 }
 
-func runDepsDetach(p printer, dir, child, target string, detachAll bool) int {
+func runDepsDetach(p printer, dir, child, target string, detachAll bool, keywords []string) int {
 	root, err := resolveRoot(dir)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to resolve working directory: %v\n", err)
 		return 1
 	}
 
-	scanned, scanErrs, err := engine.Scan(root)
+	scanned, scanErrs, err := engine.ScanWithKeywords(root, keywords)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "scan failed: %v\n", err)
 		p.resultLine(false)

@@ -4,11 +4,22 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 
 	"github.com/kuri-sun/todo-graph/internal/graph"
 )
+
+var depsTodoPattern = mustDefaultPattern()
+
+func mustDefaultPattern() *regexp.Regexp {
+	p, err := compileTodoPattern(defaultKeywords)
+	if err != nil {
+		panic(err)
+	}
+	return p
+}
 
 // UpdateDeps updates @todo-deps for a given TODO id in its source file.
 // It validates that the TODO and all parents exist in the scanned graph and
@@ -54,11 +65,11 @@ func updateDeps(root string, g graph.Graph, target string, parents []string, all
 
 	for i := todoIdx + 1; i < len(lines); i++ {
 		trimmed := strings.TrimSpace(lines[i])
-		if trimmed == "" || todoLinePattern.MatchString(trimmed) || !commentLine.MatchString(trimmed) {
-			break
-		}
 		cleaned := strings.TrimSpace(commentLine.ReplaceAllString(trimmed, ""))
 		lower := strings.ToLower(cleaned)
+		if trimmed == "" || (!strings.HasPrefix(lower, "@") && depsTodoPattern.MatchString(cleaned)) || !commentLine.MatchString(trimmed) {
+			break
+		}
 		if strings.HasPrefix(lower, "@todo-id") {
 			insertIdx = i + 1
 		}
