@@ -173,6 +173,28 @@ func TestCLIDepsDetachRemovesParent(t *testing.T) {
 	}
 }
 
+// Integration: deps detach --all should clear parents.
+func TestCLIDepsDetachAll(t *testing.T) {
+	tmp := t.TempDir()
+	copyFixtureFile(t, filepath.Join("sample", "index.ts"), tmp)
+	copyFixtureFile(t, filepath.Join("sample", "users.ts"), tmp)
+
+	bin := buildCLI(t)
+	workdir := filepath.Join(tmp, "sample")
+
+	runCmd(t, bin, workdir, "deps", "detach", "--id", "cleanup-sample", "--all")
+
+	data := readFile(t, filepath.Join(workdir, "index.ts"))
+	if strings.Contains(data, "@todo-deps") {
+		t.Fatalf("expected deps line removed, got:\n%s", data)
+	}
+
+	_, out := runCmdExpectExit(t, bin, workdir, 3, "generate")
+	if !strings.Contains(out, "isolated TODOs") {
+		t.Fatalf("expected isolated TODOs after detach all, got:\n%s", out)
+	}
+}
+
 // Integration: fix should add placeholder ids for missing @todo-id.
 func TestCLIFixAddsMissingIDs(t *testing.T) {
 	tmp := t.TempDir()

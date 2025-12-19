@@ -52,12 +52,12 @@ func main() {
 			}
 			os.Exit(runDepsSet(p, dir, child, parents))
 		case "detach":
-			dir, child, target, err := parseDepsDetachFlags(os.Args[3:])
+			dir, child, target, detachAll, err := parseDepsDetachFlags(os.Args[3:])
 			if err != nil {
 				fmt.Fprintln(os.Stderr, err)
 				os.Exit(1)
 			}
-			os.Exit(runDepsDetach(p, dir, child, target))
+			os.Exit(runDepsDetach(p, dir, child, target, detachAll))
 		default:
 			fmt.Fprintf(os.Stderr, "unknown deps subcommand: %s\n", sub)
 			os.Exit(1)
@@ -223,7 +223,7 @@ func runDepsSet(p printer, dir, child string, parents []string) int {
 	return 0
 }
 
-func runDepsDetach(p printer, dir, child, target string) int {
+func runDepsDetach(p printer, dir, child, target string, detachAll bool) int {
 	root, err := resolveRoot(dir)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to resolve working directory: %v\n", err)
@@ -243,19 +243,23 @@ func runDepsDetach(p printer, dir, child, target string) int {
 	}
 
 	parents := engine.CurrentParents(scanned, child)
-	found := false
 	var remaining []string
-	for _, pID := range parents {
-		if pID == target {
-			found = true
-			continue
+	if detachAll {
+		remaining = nil
+	} else {
+		found := false
+		for _, pID := range parents {
+			if pID == target {
+				found = true
+				continue
+			}
+			remaining = append(remaining, pID)
 		}
-		remaining = append(remaining, pID)
-	}
-	if !found {
-		fmt.Fprintf(os.Stderr, "parent %q not found on TODO %q\n", target, child)
-		p.resultLine(false)
-		return 1
+		if !found {
+			fmt.Fprintf(os.Stderr, "parent %q not found on TODO %q\n", target, child)
+			p.resultLine(false)
+			return 1
+		}
 	}
 
 	if err := engine.UpdateDepsAllowEmpty(root, scanned, child, remaining); err != nil {
@@ -279,7 +283,11 @@ func runDepsDetach(p printer, dir, child, target string) int {
 	fmt.Println()
 	p.section("Deps detach complete")
 	p.resultLine(true)
-	p.infof("removed parent %s from %s", target, child)
+	if detachAll {
+		p.infof("removed all parents from %s", child)
+	} else {
+		p.infof("removed parent %s from %s", target, child)
+	}
 	return 0
 }
 
@@ -614,42 +622,45 @@ func parseDepsSetFlags(args []string) (string, string, []string, error) {
 	return dir, id, parents, nil
 }
 
-func parseDepsDetachFlags(args []string) (string, string, string, error) {
+func parseDepsDetachFlags(args []string) (string, string, string, bool, error) {
 	dir := ""
 	id := ""
 	target := ""
+	detachAll := false
 	for i := 0; i < len(args); i++ {
 		arg := args[i]
 		switch arg {
 		case "--dir":
 			if i+1 >= len(args) {
-				return "", "", "", fmt.Errorf("missing value for --dir")
+				return "", "", "", false, fmt.Errorf("missing value for --dir")
 			}
 			dir = args[i+1]
 			i++
 		case "--id":
 			if i+1 >= len(args) {
-				return "", "", "", fmt.Errorf("missing value for --id")
+				return "", "", "", false, fmt.Errorf("missing value for --id")
 			}
 			id = args[i+1]
 			i++
 		case "--target":
 			if i+1 >= len(args) {
-				return "", "", "", fmt.Errorf("missing value for --target")
+				return "", "", "", false, fmt.Errorf("missing value for --target")
 			}
 			target = args[i+1]
 			i++
+		case "--all":
+			detachAll = true
 		default:
-			return "", "", "", fmt.Errorf("unknown flag for deps detach: %s", arg)
+			return "", "", "", false, fmt.Errorf("unknown flag for deps detach: %s", arg)
 		}
 	}
 	if id == "" {
-		return "", "", "", fmt.Errorf("--id is required")
+		return "", "", "", false, fmt.Errorf("--id is required")
 	}
-	if target == "" {
-		return "", "", "", fmt.Errorf("--target is required")
+	if target == "" && !detachAll {
+		return "", "", "", false, fmt.Errorf("--target is required unless --all")
 	}
-	return dir, id, target, nil
+	return dir, id, target, detachAll, nil
 }
 
 func parseViewFlags(args []string) (string, bool, error) {
