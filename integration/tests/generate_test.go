@@ -118,7 +118,7 @@ func TestCLIGenerateParsesJSXComments(t *testing.T) {
 	}
 }
 
-// Integration: generate should honor custom keywords.
+// Integration: generate should honor custom keywords (NOTE/FIXME) and capture edges.
 func TestCLIGenerateWithCustomKeywords(t *testing.T) {
 	tmp := t.TempDir()
 	copyFixtureFile(t, filepath.Join("custom-keywords", "index.ts"), tmp)
