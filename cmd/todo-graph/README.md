@@ -4,11 +4,11 @@
 
 - `todo-graph generate` — scan for TODOs and write `.todo-graph`.
 - `todo-graph check` — validate TODO references, detect cycles/isolated nodes, and ensure `.todo-graph` matches source.
-- `todo-graph visualize` — read `.todo-graph` and print an indented tree of the TODO graph.
+- `todo-graph view` — read `.todo-graph` and print an indented tree of the TODO graph.
 
 ### Flags and behavior
 
-- `visualize --roots-only` — show only root TODOs.
+- `view --roots-only` — show only root TODOs.
 - `generate --output <path>` — write `.todo-graph` to a custom path.
 - `--dir <path>` — run commands against a different repository root.
 - `--help`, `-h` — show usage.

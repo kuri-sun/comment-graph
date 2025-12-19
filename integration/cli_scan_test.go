@@ -101,8 +101,8 @@ func TestCLICheckDetectsIsolated(t *testing.T) {
 	}
 }
 
-// Integration: visualize should emit mermaid with the discovered edges.
-func TestCLIVisualizeOutputsMermaid(t *testing.T) {
+// Integration: view should emit mermaid with the discovered edges.
+func TestCLIViewOutputsMermaid(t *testing.T) {
 	tmp := t.TempDir()
 	copyFixtureFile(t, filepath.Join("sample", "index.ts"), tmp)
 	copyFixtureFile(t, filepath.Join("sample", "users.ts"), tmp)
@@ -110,7 +110,7 @@ func TestCLIVisualizeOutputsMermaid(t *testing.T) {
 	bin := buildCLI(t)
 	runCmd(t, bin, tmp, "generate")
 
-	code, out := runCmdExpectExit(t, bin, tmp, 0, "visualize")
+	code, out := runCmdExpectExit(t, bin, tmp, 0, "view")
 	if code != 0 {
 		t.Fatalf("expected exit 0, got %d\nout:\n%s", code, out)
 	}
@@ -122,8 +122,8 @@ func TestCLIVisualizeOutputsMermaid(t *testing.T) {
 	}
 }
 
-// Integration: visualize should support roots-only view.
-func TestCLIVisualizeRootsOnly(t *testing.T) {
+// Integration: view should support roots-only view.
+func TestCLIViewRootsOnly(t *testing.T) {
 	tmp := t.TempDir()
 	copyFixtureFile(t, filepath.Join("sample", "index.ts"), tmp)
 	copyFixtureFile(t, filepath.Join("sample", "users.ts"), tmp)
@@ -131,7 +131,7 @@ func TestCLIVisualizeRootsOnly(t *testing.T) {
 	bin := buildCLI(t)
 	runCmd(t, bin, tmp, "generate")
 
-	code, out := runCmdExpectExit(t, bin, tmp, 0, "visualize", "--roots-only")
+	code, out := runCmdExpectExit(t, bin, tmp, 0, "view", "--roots-only")
 	if code != 0 {
 		t.Fatalf("expected exit 0, got %d\nout:\n%s", code, out)
 	}
@@ -164,7 +164,7 @@ func TestCLIDirFlagTargetsRoot(t *testing.T) {
 		t.Fatalf("expected exit 0, got %d\nout:\n%s", code, out)
 	}
 
-	code, out = runCmdExpectExit(t, bin, otherDir, 0, "visualize", "--dir", tmp)
+	code, out = runCmdExpectExit(t, bin, otherDir, 0, "view", "--dir", tmp)
 	if code != 0 {
 		t.Fatalf("expected exit 0, got %d\nout:\n%s", code, out)
 	}
