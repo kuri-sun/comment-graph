@@ -65,13 +65,6 @@ func main() {
 			os.Exit(1)
 		}
 		os.Exit(runFix(p, dir))
-	case "view":
-		dir, rootsOnly, err := parseViewFlags(os.Args[2:])
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
-		}
-		os.Exit(runView(dir, rootsOnly))
 	case "help", "-h", "--help":
 		printHelp()
 	default:
@@ -229,27 +222,6 @@ func parseDepsDetachFlags(args []string) (string, string, string, bool, error) {
 	return dir, id, target, detachAll, nil
 }
 
-func parseViewFlags(args []string) (string, bool, error) {
-	dir := ""
-	rootsOnly := false
-	for i := 0; i < len(args); i++ {
-		arg := args[i]
-		switch arg {
-		case "--dir":
-			if i+1 >= len(args) {
-				return "", false, fmt.Errorf("missing value for --dir")
-			}
-			dir = args[i+1]
-			i++
-		case "--roots-only":
-			rootsOnly = true
-		default:
-			return "", false, fmt.Errorf("unknown flag for view: %s", arg)
-		}
-	}
-	return dir, rootsOnly, nil
-}
-
 func printHelp() {
 	fmt.Printf("todo-graph CLI (version %s)\n", version)
 	fmt.Println()
@@ -269,7 +241,4 @@ func printHelp() {
 	fmt.Println("      --dir <path>        Target a different root")
 	fmt.Println("  todo-graph fix          Auto-add @todo-id placeholders for missing TODO ids")
 	fmt.Println("      --dir <path>        Target a different root")
-	fmt.Println("  todo-graph view         Show the graph as an indented tree")
-	fmt.Println("      --dir <path>        Target a different root (runs generate first)")
-	fmt.Println("      --roots-only        Show only root TODOs (no descendants)")
 }

@@ -101,27 +101,6 @@ func TestCLICheckDetectsIsolated(t *testing.T) {
 	}
 }
 
-// Integration: view should emit mermaid with the discovered edges.
-func TestCLIViewOutputsMermaid(t *testing.T) {
-	tmp := t.TempDir()
-	copyFixtureFile(t, filepath.Join("sample", "index.ts"), tmp)
-	copyFixtureFile(t, filepath.Join("sample", "users.ts"), tmp)
-
-	bin := buildCLI(t)
-	runCmd(t, bin, tmp, "generate")
-
-	code, out := runCmdExpectExit(t, bin, tmp, 0, "view")
-	if code != 0 {
-		t.Fatalf("expected exit 0, got %d\nout:\n%s", code, out)
-	}
-	if !strings.Contains(out, "> TODO Graph") {
-		t.Fatalf("expected TODO Graph header, got:\n%s", out)
-	}
-	if !strings.Contains(out, "- [] db-sample") || !strings.Contains(out, "- [] cache-sample") || !strings.Contains(out, "- [] cleanup-sample") {
-		t.Fatalf("expected tree nodes in output, got:\n%s", out)
-	}
-}
-
 // Integration: deps set should update @todo-deps in source and regenerate graph.
 func TestCLIDepsSetUpdatesDeps(t *testing.T) {
 	tmp := t.TempDir()
@@ -232,27 +211,6 @@ func TestCLICheckReportsScanErrorsWithoutGraph(t *testing.T) {
 	}
 }
 
-// Integration: view should support roots-only view.
-func TestCLIViewRootsOnly(t *testing.T) {
-	tmp := t.TempDir()
-	copyFixtureFile(t, filepath.Join("sample", "index.ts"), tmp)
-	copyFixtureFile(t, filepath.Join("sample", "users.ts"), tmp)
-
-	bin := buildCLI(t)
-	runCmd(t, bin, tmp, "generate")
-
-	code, out := runCmdExpectExit(t, bin, tmp, 0, "view", "--roots-only")
-	if code != 0 {
-		t.Fatalf("expected exit 0, got %d\nout:\n%s", code, out)
-	}
-	if !strings.Contains(out, "- [] db-sample") {
-		t.Fatalf("expected root todo in output, got:\n%s", out)
-	}
-	if strings.Contains(out, "cache-sample") || strings.Contains(out, "cleanup-sample") {
-		t.Fatalf("expected only roots in output, got:\n%s", out)
-	}
-}
-
 // Integration: --dir should run commands against a different working directory.
 func TestCLIDirFlagTargetsRoot(t *testing.T) {
 	tmp := t.TempDir()
@@ -272,14 +230,6 @@ func TestCLIDirFlagTargetsRoot(t *testing.T) {
 	code, out := runCmdExpectExit(t, bin, otherDir, 0, "check", "--dir", tmp)
 	if code != 0 {
 		t.Fatalf("expected exit 0, got %d\nout:\n%s", code, out)
-	}
-
-	code, out = runCmdExpectExit(t, bin, otherDir, 0, "view", "--dir", tmp)
-	if code != 0 {
-		t.Fatalf("expected exit 0, got %d\nout:\n%s", code, out)
-	}
-	if !strings.Contains(out, "- [] db-sample") || !strings.Contains(out, "- [] cache-sample") || !strings.Contains(out, "- [] cleanup-sample") {
-		t.Fatalf("expected tree nodes in output, got:\n%s", out)
 	}
 }
 
