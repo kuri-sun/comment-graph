@@ -51,6 +51,13 @@ func main() {
 				os.Exit(1)
 			}
 			os.Exit(runDepsSet(p, dir, child, parents))
+		case "detach":
+			dir, child, target, err := parseDepsDetachFlags(os.Args[3:])
+			if err != nil {
+				fmt.Fprintln(os.Stderr, err)
+				os.Exit(1)
+			}
+			os.Exit(runDepsDetach(p, dir, child, target))
 		default:
 			fmt.Fprintf(os.Stderr, "unknown deps subcommand: %s\n", sub)
 			os.Exit(1)
@@ -213,6 +220,66 @@ func runDepsSet(p printer, dir, child string, parents []string) int {
 	p.section("Deps set complete")
 	p.resultLine(true)
 	p.infof("updated @todo-deps for %s", child)
+	return 0
+}
+
+func runDepsDetach(p printer, dir, child, target string) int {
+	root, err := resolveRoot(dir)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to resolve working directory: %v\n", err)
+		return 1
+	}
+
+	scanned, scanErrs, err := engine.Scan(root)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "scan failed: %v\n", err)
+		p.resultLine(false)
+		return 1
+	}
+
+	report := engine.ValidateGraph(scanned, scanErrs)
+	if code, failed := validateAndReport(p, "Deps detach validation", scanned, report, nil, false); failed {
+		return code
+	}
+
+	parents := engine.CurrentParents(scanned, child)
+	found := false
+	var remaining []string
+	for _, pID := range parents {
+		if pID == target {
+			found = true
+			continue
+		}
+		remaining = append(remaining, pID)
+	}
+	if !found {
+		fmt.Fprintf(os.Stderr, "parent %q not found on TODO %q\n", target, child)
+		p.resultLine(false)
+		return 1
+	}
+
+	if err := engine.UpdateDepsAllowEmpty(root, scanned, child, remaining); err != nil {
+		fmt.Fprintf(os.Stderr, "detach failed: %v\n", err)
+		p.resultLine(false)
+		return 1
+	}
+
+	updated, _, err := engine.Scan(root)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "rescan failed after detach: %v\n", err)
+		p.resultLine(false)
+		return 1
+	}
+	if err := engine.WriteGraph(root, "", updated); err != nil {
+		fmt.Fprintf(os.Stderr, "failed to write .todo-graph: %v\n", err)
+		p.resultLine(false)
+		return 1
+	}
+
+	fmt.Println()
+	p.section("Deps detach complete")
+	p.resultLine(true)
+	p.infof("removed parent %s from %s", target, child)
 	return 0
 }
 
@@ -547,6 +614,44 @@ func parseDepsSetFlags(args []string) (string, string, []string, error) {
 	return dir, id, parents, nil
 }
 
+func parseDepsDetachFlags(args []string) (string, string, string, error) {
+	dir := ""
+	id := ""
+	target := ""
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
+		switch arg {
+		case "--dir":
+			if i+1 >= len(args) {
+				return "", "", "", fmt.Errorf("missing value for --dir")
+			}
+			dir = args[i+1]
+			i++
+		case "--id":
+			if i+1 >= len(args) {
+				return "", "", "", fmt.Errorf("missing value for --id")
+			}
+			id = args[i+1]
+			i++
+		case "--target":
+			if i+1 >= len(args) {
+				return "", "", "", fmt.Errorf("missing value for --target")
+			}
+			target = args[i+1]
+			i++
+		default:
+			return "", "", "", fmt.Errorf("unknown flag for deps detach: %s", arg)
+		}
+	}
+	if id == "" {
+		return "", "", "", fmt.Errorf("--id is required")
+	}
+	if target == "" {
+		return "", "", "", fmt.Errorf("--target is required")
+	}
+	return dir, id, target, nil
+}
+
 func parseViewFlags(args []string) (string, bool, error) {
 	dir := ""
 	rootsOnly := false
@@ -580,6 +685,10 @@ func printHelp() {
 	fmt.Println("  todo-graph deps set     Update @todo-deps for a TODO id")
 	fmt.Println("      --id <id>           Target TODO id to update")
 	fmt.Println("      --depends-on <ids>  Comma-separated parent TODO ids")
+	fmt.Println("      --dir <path>        Target a different root")
+	fmt.Println("  todo-graph deps detach  Remove a parent from a TODO's @todo-deps")
+	fmt.Println("      --id <id>           Target TODO id to update")
+	fmt.Println("      --target <id>       Parent TODO id to remove")
 	fmt.Println("      --dir <path>        Target a different root")
 	fmt.Println("  todo-graph fix          Auto-add @todo-id placeholders for missing TODO ids")
 	fmt.Println("      --dir <path>        Target a different root")

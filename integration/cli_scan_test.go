@@ -150,6 +150,29 @@ func TestCLIDepsSetUpdatesDeps(t *testing.T) {
 	}
 }
 
+// Integration: deps detach should remove a parent and rewrite graph.
+func TestCLIDepsDetachRemovesParent(t *testing.T) {
+	tmp := t.TempDir()
+	copyFixtureFile(t, filepath.Join("sample", "index.ts"), tmp)
+	copyFixtureFile(t, filepath.Join("sample", "users.ts"), tmp)
+
+	bin := buildCLI(t)
+	workdir := filepath.Join(tmp, "sample")
+
+	runCmd(t, bin, workdir, "deps", "detach", "--id", "cleanup-sample", "--target", "cache-sample")
+
+	data := readFile(t, filepath.Join(workdir, "index.ts"))
+	if strings.Contains(data, "cache-sample") {
+		t.Fatalf("expected cache-sample dep removed, got:\n%s", data)
+	}
+
+	// With no parents, cleanup-sample becomes isolated; generate should surface that.
+	_, out := runCmdExpectExit(t, bin, workdir, 3, "generate")
+	if !strings.Contains(out, "isolated TODOs") {
+		t.Fatalf("expected isolated TODOs after detach, got:\n%s", out)
+	}
+}
+
 // Integration: fix should add placeholder ids for missing @todo-id.
 func TestCLIFixAddsMissingIDs(t *testing.T) {
 	tmp := t.TempDir()
