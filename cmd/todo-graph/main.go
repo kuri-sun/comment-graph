@@ -37,6 +37,13 @@ func main() {
 			os.Exit(1)
 		}
 		os.Exit(runCheck(p, dir))
+	case "fix":
+		dir, err := parseDirFlag(os.Args[2:], "fix")
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		os.Exit(runFix(p, dir))
 	case "view":
 		dir, rootsOnly, err := parseViewFlags(os.Args[2:])
 		if err != nil {
@@ -144,6 +151,38 @@ func runCheck(p printer, dir string) int {
 	roots := findRoots(scanned)
 	p.infof("root TODOs : %d", len(roots))
 	p.infof("total TODOs: %d", len(scanned.Todos))
+	return 0
+}
+
+func runFix(p printer, dir string) int {
+	root, err := resolveRoot(dir)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to resolve working directory: %v\n", err)
+		return 1
+	}
+
+	report, err := engine.FixMissingIDs(root)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "fix failed: %v\n", err)
+		p.resultLine(false)
+		return 1
+	}
+
+	fmt.Println()
+	p.section("Fix complete")
+	p.resultLine(true)
+
+	if report.Added == 0 {
+		p.infoLine("no missing @todo-id placeholders to add")
+	} else {
+		p.infof("placeholders added: %d", report.Added)
+	}
+	if len(report.Others) > 0 {
+		p.warnLine("other scan errors remain; run `todo-graph check` after fixing ids")
+		for _, e := range report.Others {
+			fmt.Fprintf(os.Stderr, "  - %s:%d: %s\n", e.File, e.Line, e.Msg)
+		}
+	}
 	return 0
 }
 
@@ -431,6 +470,8 @@ func printHelp() {
 	fmt.Println("      --dir <path>        Run against a different root (defaults to cwd; useful in scripts)")
 	fmt.Println("      --output <path>     Write .todo-graph to a different path (for CI artifacts)")
 	fmt.Println("  todo-graph check        Validate TODO graph consistency")
+	fmt.Println("      --dir <path>        Target a different root")
+	fmt.Println("  todo-graph fix          Auto-add @todo-id placeholders for missing TODO ids")
 	fmt.Println("      --dir <path>        Target a different root")
 	fmt.Println("  todo-graph view         Show the graph as an indented tree")
 	fmt.Println("      --dir <path>        Target a different root (runs generate first)")

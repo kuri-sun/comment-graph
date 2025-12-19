@@ -122,6 +122,25 @@ func TestCLIViewOutputsMermaid(t *testing.T) {
 	}
 }
 
+// Integration: fix should add placeholder ids for missing @todo-id.
+func TestCLIFixAddsMissingIDs(t *testing.T) {
+	tmp := t.TempDir()
+	copyFixtureFile(t, filepath.Join("missing-id", "index.ts"), tmp)
+
+	bin := buildCLI(t)
+	runCmd(t, bin, tmp, "fix")
+
+	data := readFile(t, filepath.Join(tmp, "missing-id", "index.ts"))
+	if !strings.Contains(data, "@todo-id todo-missing-id-index-ts-1") {
+		t.Fatalf("expected generated placeholder id, got:\n%s", data)
+	}
+
+	_, out := runCmdExpectExit(t, bin, tmp, 3, "generate")
+	if !strings.Contains(out, "isolated TODOs") {
+		t.Fatalf("expected isolated todo warning, got:\n%s", out)
+	}
+}
+
 // Integration: check should surface scan/undefined errors even without .todo-graph.
 func TestCLICheckReportsScanErrorsWithoutGraph(t *testing.T) {
 	tmp := t.TempDir()
