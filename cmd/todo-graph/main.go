@@ -20,19 +20,19 @@ func main() {
 	cmd := os.Args[1]
 	switch cmd {
 	case "generate":
-		dir, output, format, err := parseGenerateFlags(os.Args[2:])
+		dir, output, format, keywords, err := parseGenerateFlags(os.Args[2:])
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
-		os.Exit(runGenerate(p, dir, output, format))
+		os.Exit(runGenerate(p, dir, output, format, keywords))
 	case "check":
-		dir, err := parseDirFlag(os.Args[2:], "check")
+		dir, keywords, err := parseDirFlag(os.Args[2:], "check")
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
-		os.Exit(runCheck(p, dir))
+		os.Exit(runCheck(p, dir, keywords))
 	case "deps":
 		if len(os.Args) < 3 {
 			fmt.Fprintln(os.Stderr, "deps requires a subcommand (e.g. set)")
@@ -41,30 +41,30 @@ func main() {
 		sub := os.Args[2]
 		switch sub {
 		case "set":
-			dir, child, parents, err := parseDepsSetFlags(os.Args[3:])
+			dir, child, parents, keywords, err := parseDepsSetFlags(os.Args[3:])
 			if err != nil {
 				fmt.Fprintln(os.Stderr, err)
 				os.Exit(1)
 			}
-			os.Exit(runDepsSet(p, dir, child, parents))
+			os.Exit(runDepsSet(p, dir, child, parents, keywords))
 		case "detach":
-			dir, child, target, detachAll, err := parseDepsDetachFlags(os.Args[3:])
+			dir, child, target, detachAll, keywords, err := parseDepsDetachFlags(os.Args[3:])
 			if err != nil {
 				fmt.Fprintln(os.Stderr, err)
 				os.Exit(1)
 			}
-			os.Exit(runDepsDetach(p, dir, child, target, detachAll))
+			os.Exit(runDepsDetach(p, dir, child, target, detachAll, keywords))
 		default:
 			fmt.Fprintf(os.Stderr, "unknown deps subcommand: %s\n", sub)
 			os.Exit(1)
 		}
 	case "fix":
-		dir, err := parseDirFlag(os.Args[2:], "fix")
+		dir, keywords, err := parseDirFlag(os.Args[2:], "fix")
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
-		os.Exit(runFix(p, dir))
+		os.Exit(runFix(p, dir, keywords))
 	case "version", "--version", "-v":
 		fmt.Println(version)
 		return
@@ -92,87 +92,120 @@ func currentRoot() (string, error) {
 	return filepath.Abs(root)
 }
 
-func parseGenerateFlags(args []string) (string, string, string, error) {
+func parseGenerateFlags(args []string) (string, string, string, []string, error) {
 	dir := ""
 	output := ""
 	format := "yaml"
+	var keywords []string
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
 		case "--dir":
 			if i+1 >= len(args) {
-				return "", "", "", fmt.Errorf("missing value for --dir")
+				return "", "", "", nil, fmt.Errorf("missing value for --dir")
 			}
 			if dir != "" {
-				return "", "", "", fmt.Errorf("duplicate --dir flag")
+				return "", "", "", nil, fmt.Errorf("duplicate --dir flag")
 			}
 			dir = args[i+1]
 			i++
 		case "--output":
 			if i+1 >= len(args) {
-				return "", "", "", fmt.Errorf("missing value for --output")
+				return "", "", "", nil, fmt.Errorf("missing value for --output")
 			}
 			if output != "" {
-				return "", "", "", fmt.Errorf("duplicate --output flag")
+				return "", "", "", nil, fmt.Errorf("duplicate --output flag")
 			}
 			output = args[i+1]
 			i++
 		case "--format":
 			if i+1 >= len(args) {
-				return "", "", "", fmt.Errorf("missing value for --format")
+				return "", "", "", nil, fmt.Errorf("missing value for --format")
 			}
 			val := strings.ToLower(args[i+1])
 			if val != "yaml" && val != "json" {
-				return "", "", "", fmt.Errorf("unsupported format: %s", val)
+				return "", "", "", nil, fmt.Errorf("unsupported format: %s", val)
 			}
 			format = val
 			i++
+		case "--keywords":
+			if i+1 >= len(args) {
+				return "", "", "", nil, fmt.Errorf("missing value for --keywords")
+			}
+			if len(keywords) != 0 {
+				return "", "", "", nil, fmt.Errorf("duplicate --keywords flag")
+			}
+			keywords = parseKeywords(args[i+1])
+			i++
 		default:
-			return "", "", "", fmt.Errorf("unknown flag for generate: %s", args[i])
+			return "", "", "", nil, fmt.Errorf("unknown flag for generate: %s", args[i])
 		}
 	}
-	return dir, output, format, nil
+	return dir, output, format, keywords, nil
 }
 
-func parseDirFlag(args []string, cmd string) (string, error) {
+func parseDirFlag(args []string, cmd string) (string, []string, error) {
 	dir := ""
+	var keywords []string
 	for i := 0; i < len(args); i++ {
 		arg := args[i]
 		switch arg {
 		case "--dir":
 			if i+1 >= len(args) {
-				return "", fmt.Errorf("missing value for --dir")
+				return "", nil, fmt.Errorf("missing value for --dir")
 			}
 			dir = args[i+1]
 			i++
+		case "--keywords":
+			if i+1 >= len(args) {
+				return "", nil, fmt.Errorf("missing value for --keywords")
+			}
+			if len(keywords) != 0 {
+				return "", nil, fmt.Errorf("duplicate --keywords flag")
+			}
+			keywords = parseKeywords(args[i+1])
+			i++
 		default:
-			return "", fmt.Errorf("unknown flag for %s: %s", cmd, arg)
+			return "", nil, fmt.Errorf("unknown flag for %s: %s", cmd, arg)
 		}
 	}
-	return dir, nil
+	return dir, keywords, nil
 }
 
-func parseDepsSetFlags(args []string) (string, string, []string, error) {
+func parseKeywords(raw string) []string {
+	parts := strings.Split(raw, ",")
+	var out []string
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if p != "" {
+			out = append(out, p)
+		}
+	}
+	return out
+}
+
+func parseDepsSetFlags(args []string) (string, string, []string, []string, error) {
 	dir := ""
 	id := ""
 	var parents []string
+	var keywords []string
 	for i := 0; i < len(args); i++ {
 		arg := args[i]
 		switch arg {
 		case "--dir":
 			if i+1 >= len(args) {
-				return "", "", nil, fmt.Errorf("missing value for --dir")
+				return "", "", nil, nil, fmt.Errorf("missing value for --dir")
 			}
 			dir = args[i+1]
 			i++
 		case "--id":
 			if i+1 >= len(args) {
-				return "", "", nil, fmt.Errorf("missing value for --id")
+				return "", "", nil, nil, fmt.Errorf("missing value for --id")
 			}
 			id = args[i+1]
 			i++
 		case "--depends-on":
 			if i+1 >= len(args) {
-				return "", "", nil, fmt.Errorf("missing value for --depends-on")
+				return "", "", nil, nil, fmt.Errorf("missing value for --depends-on")
 			}
 			list := strings.Split(args[i+1], ",")
 			for _, p := range list {
@@ -182,58 +215,77 @@ func parseDepsSetFlags(args []string) (string, string, []string, error) {
 				}
 			}
 			i++
+		case "--keywords":
+			if i+1 >= len(args) {
+				return "", "", nil, nil, fmt.Errorf("missing value for --keywords")
+			}
+			if len(keywords) != 0 {
+				return "", "", nil, nil, fmt.Errorf("duplicate --keywords flag")
+			}
+			keywords = parseKeywords(args[i+1])
+			i++
 		default:
-			return "", "", nil, fmt.Errorf("unknown flag for deps set: %s", arg)
+			return "", "", nil, nil, fmt.Errorf("unknown flag for deps set: %s", arg)
 		}
 	}
 	if id == "" {
-		return "", "", nil, fmt.Errorf("--id is required")
+		return "", "", nil, nil, fmt.Errorf("--id is required")
 	}
 	if len(parents) == 0 {
-		return "", "", nil, fmt.Errorf("--depends-on requires at least one parent id")
+		return "", "", nil, nil, fmt.Errorf("--depends-on requires at least one parent id")
 	}
-	return dir, id, parents, nil
+	return dir, id, append([]string{}, parents...), keywords, nil
 }
 
-func parseDepsDetachFlags(args []string) (string, string, string, bool, error) {
+func parseDepsDetachFlags(args []string) (string, string, string, bool, []string, error) {
 	dir := ""
 	id := ""
 	target := ""
 	detachAll := false
+	var keywords []string
 	for i := 0; i < len(args); i++ {
 		arg := args[i]
 		switch arg {
 		case "--dir":
 			if i+1 >= len(args) {
-				return "", "", "", false, fmt.Errorf("missing value for --dir")
+				return "", "", "", false, nil, fmt.Errorf("missing value for --dir")
 			}
 			dir = args[i+1]
 			i++
 		case "--id":
 			if i+1 >= len(args) {
-				return "", "", "", false, fmt.Errorf("missing value for --id")
+				return "", "", "", false, nil, fmt.Errorf("missing value for --id")
 			}
 			id = args[i+1]
 			i++
 		case "--target":
 			if i+1 >= len(args) {
-				return "", "", "", false, fmt.Errorf("missing value for --target")
+				return "", "", "", false, nil, fmt.Errorf("missing value for --target")
 			}
 			target = args[i+1]
 			i++
 		case "--all":
 			detachAll = true
+		case "--keywords":
+			if i+1 >= len(args) {
+				return "", "", "", false, nil, fmt.Errorf("missing value for --keywords")
+			}
+			if len(keywords) != 0 {
+				return "", "", "", false, nil, fmt.Errorf("duplicate --keywords flag")
+			}
+			keywords = parseKeywords(args[i+1])
+			i++
 		default:
-			return "", "", "", false, fmt.Errorf("unknown flag for deps detach: %s", arg)
+			return "", "", "", false, nil, fmt.Errorf("unknown flag for deps detach: %s", arg)
 		}
 	}
 	if id == "" {
-		return "", "", "", false, fmt.Errorf("--id is required")
+		return "", "", "", false, nil, fmt.Errorf("--id is required")
 	}
 	if target == "" && !detachAll {
-		return "", "", "", false, fmt.Errorf("--target is required unless --all")
+		return "", "", "", false, nil, fmt.Errorf("--target is required unless --all")
 	}
-	return dir, id, target, detachAll, nil
+	return dir, id, target, detachAll, keywords, nil
 }
 
 func printHelp() {
@@ -244,17 +296,22 @@ func printHelp() {
 	fmt.Println("      --dir <path>        Run against a different root (defaults to cwd; useful in scripts)")
 	fmt.Println("      --output <path>     Write .todo-graph to a different path (for CI artifacts)")
 	fmt.Println("      --format <yaml|json> Output format (default yaml; json writes .todo-graph.json)")
+	fmt.Println("      --keywords <list>   Comma-separated keywords to scan (default: TODO,FIXME,NOTE,WARNING,HACK,CHANGED,REVIEW)")
 	fmt.Println("  todo-graph check        Validate TODO graph consistency")
 	fmt.Println("      --dir <path>        Target a different root")
+	fmt.Println("      --keywords <list>   Comma-separated keywords to scan")
 	fmt.Println("  todo-graph deps set     Update @todo-deps for a TODO id")
 	fmt.Println("      --id <id>           Target TODO id to update")
 	fmt.Println("      --depends-on <ids>  Comma-separated parent TODO ids")
 	fmt.Println("      --dir <path>        Target a different root")
+	fmt.Println("      --keywords <list>   Comma-separated keywords to scan")
 	fmt.Println("  todo-graph deps detach  Remove a parent from a TODO's @todo-deps")
 	fmt.Println("      --id <id>           Target TODO id to update")
 	fmt.Println("      --target <id>       Parent TODO id to remove")
 	fmt.Println("      --dir <path>        Target a different root")
+	fmt.Println("      --keywords <list>   Comma-separated keywords to scan")
 	fmt.Println("  todo-graph fix          Auto-add @todo-id placeholders for missing TODO ids")
 	fmt.Println("      --dir <path>        Target a different root")
+	fmt.Println("      --keywords <list>   Comma-separated keywords to scan")
 	fmt.Println("  todo-graph version      Print the CLI version")
 }

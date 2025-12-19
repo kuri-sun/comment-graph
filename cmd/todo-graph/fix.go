@@ -7,14 +7,14 @@ import (
 	"github.com/kuri-sun/todo-graph/internal/engine"
 )
 
-func runFix(p printer, dir string) int {
+func runFix(p printer, dir string, keywords []string) int {
 	root, err := resolveRoot(dir)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to resolve working directory: %v\n", err)
 		return 1
 	}
 
-	report, err := engine.FixMissingIDs(root)
+	report, err := engine.FixMissingIDsWithKeywords(root, keywords)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "fix failed: %v\n", err)
 		p.resultLine(false)

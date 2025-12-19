@@ -272,6 +272,22 @@ func TestCLIGenerateSupportsOutputFlag(t *testing.T) {
 	}
 }
 
+// Integration: generate should accept --keywords and produce graph accordingly.
+func TestCLIGenerateKeywordsFlag(t *testing.T) {
+	tmp := t.TempDir()
+	copyFixtureFile(t, filepath.Join("custom-keywords", "index.ts"), tmp)
+
+	bin := buildCLI(t)
+	output := filepath.Join(tmp, "artifacts", "graph.yaml")
+
+	runCmd(t, bin, tmp, "generate", "--keywords", "NOTE,FIXME", "--output", output)
+
+	got := readFile(t, output)
+	if !strings.Contains(got, "note-task:") || !strings.Contains(got, "fix-task:") {
+		t.Fatalf("expected note-task and fix-task in output, got:\n%s", got)
+	}
+}
+
 func readFile(t *testing.T, path string) string {
 	t.Helper()
 	data, err := os.ReadFile(path)
