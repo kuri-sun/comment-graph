@@ -1,0 +1,98 @@
+package engine
+
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+
+	"github.com/kuri-sun/todo-graph/internal/graph"
+)
+
+// UpdateDeps updates @todo-deps for a given TODO id in its source file.
+// It validates that the TODO and all parents exist in the scanned graph and
+// rejects TODO blocks that already declare multiple @todo-deps lines.
+func UpdateDeps(root string, g graph.Graph, target string, parents []string) error {
+	t, ok := g.Todos[target]
+	if !ok {
+		return fmt.Errorf("TODO %q not found", target)
+	}
+	for _, p := range parents {
+		if _, ok := g.Todos[p]; !ok {
+			return fmt.Errorf("parent TODO %q not found", p)
+		}
+	}
+
+	if len(parents) == 0 {
+		return fmt.Errorf("at least one parent is required")
+	}
+
+	path := filepath.Join(root, t.File)
+	lines, err := readLines(path)
+	if err != nil {
+		return err
+	}
+	if t.Line <= 0 || t.Line-1 >= len(lines) {
+		return fmt.Errorf("invalid line for %q: %d", target, t.Line)
+	}
+
+	// find metadata block boundaries
+	todoIdx := t.Line - 1
+	insertIdx := todoIdx + 1
+	var depsIdx int = -1
+	var depsCount int
+
+	for i := todoIdx + 1; i < len(lines); i++ {
+		trimmed := strings.TrimSpace(lines[i])
+		if trimmed == "" || todoLinePattern.MatchString(trimmed) || !commentLine.MatchString(trimmed) {
+			break
+		}
+		cleaned := strings.TrimSpace(commentLine.ReplaceAllString(trimmed, ""))
+		lower := strings.ToLower(cleaned)
+		if strings.HasPrefix(lower, "@todo-id") {
+			insertIdx = i + 1
+		}
+		if strings.HasPrefix(lower, "@todo-deps") {
+			depsCount++
+			if depsCount > 1 {
+				return fmt.Errorf("multiple @todo-deps entries found for %q in %s:%d", target, t.File, i+1)
+			}
+			depsIdx = i
+			insertIdx = i
+		}
+	}
+
+	if depsCount > 1 {
+		return fmt.Errorf("multiple @todo-deps entries found for %q in %s", target, t.File)
+	}
+
+	depsLine := formatDepsLine(lines[todoIdx], parents)
+
+	if depsIdx >= 0 {
+		lines[depsIdx] = depsLine
+	} else {
+		if insertIdx > len(lines) {
+			insertIdx = len(lines)
+		}
+		lines = append(lines[:insertIdx], append([]string{depsLine}, lines[insertIdx:]...)...)
+	}
+
+	return writeLines(path, lines)
+}
+
+func formatDepsLine(todoLine string, parents []string) string {
+	prefix, suffix := commentDelimiters(todoLine)
+	return fmt.Sprintf("%s @todo-deps %s%s", prefix, strings.Join(parents, ", "), suffix)
+}
+
+func readLines(path string) ([]string, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	return strings.Split(string(data), "\n"), nil
+}
+
+func writeLines(path string, lines []string) error {
+	return os.WriteFile(path, []byte(strings.Join(lines, "\n")), 0o644)
+}
