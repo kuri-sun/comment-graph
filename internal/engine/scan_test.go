@@ -196,6 +196,58 @@ TODO: first
 	}
 }
 
+func TestJSXBlockComments(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, dir, "a.tsx", `{/*
+TODO: hero headline
+@todo-id hero-copy
+*/}
+{/*
+TODO: hook CTA
+@todo-id cta-wireup
+@todo-deps hero-copy
+*/}
+`)
+
+	g, errs, err := Scan(dir)
+	if err != nil {
+		t.Fatalf("scan error: %v", err)
+	}
+	if len(errs) != 0 {
+		t.Fatalf("unexpected scan errors: %+v", errs)
+	}
+	if len(g.Todos) != 2 {
+		t.Fatalf("expected 2 todos, got %d", len(g.Todos))
+	}
+	if len(g.Edges) != 1 || g.Edges[0].From != "hero-copy" || g.Edges[0].To != "cta-wireup" {
+		t.Fatalf("unexpected edges: %+v", g.Edges)
+	}
+}
+
+func TestJSXSingleLineBlocks(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, dir, "a.tsx", `{/* TODO: hero headline */ }
+{/* @todo-id hero-copy */}
+{/* @todo-deps cta-wireup */}
+{/* TODO: hook CTA */ }
+{/* @todo-id cta-wireup */}
+`)
+
+	g, errs, err := Scan(dir)
+	if err != nil {
+		t.Fatalf("scan error: %v", err)
+	}
+	if len(errs) != 0 {
+		t.Fatalf("unexpected scan errors: %+v", errs)
+	}
+	if len(g.Todos) != 2 {
+		t.Fatalf("expected 2 todos, got %d", len(g.Todos))
+	}
+	if len(g.Edges) != 1 || g.Edges[0].From != "cta-wireup" || g.Edges[0].To != "hero-copy" {
+		t.Fatalf("unexpected edges: %+v", g.Edges)
+	}
+}
+
 func TestHtmlComments(t *testing.T) {
 	dir := t.TempDir()
 	writeFile(t, dir, "a.html", `<!-- TODO: first -->

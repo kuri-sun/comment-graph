@@ -15,10 +15,10 @@ import (
 var (
 	todoLinePattern = regexp.MustCompile(`TODO:?`)
 	todoIDPattern   = regexp.MustCompile(`^[a-z0-9_-]+$`)
-	commentLine     = regexp.MustCompile(`^\s*(//|#|--|/\*|<!--|\*|"""|''')`)
+	commentLine     = regexp.MustCompile(`^\s*(//|#|--|/\*|{/\*|<!--|\*|"""|''')`)
 )
 
-var commentClosers = []string{"*/", "-->", `"""`, `'''`}
+var commentClosers = []string{"*/", "*/}", "-->", `"""`, `'''`}
 
 // ScanError provides contextual information for parse failures.
 type ScanError struct {
@@ -131,6 +131,7 @@ func scanFile(path, rel string) ([]graph.Edge, []graph.Todo, []ScanError, error)
 			strings.HasPrefix(trimmed, "#") ||
 			strings.HasPrefix(trimmed, "--") ||
 			strings.HasPrefix(trimmed, "/*") ||
+			strings.HasPrefix(trimmed, "{/*") ||
 			strings.HasPrefix(trimmed, "<!--") ||
 			strings.HasPrefix(trimmed, `"""`) ||
 			strings.HasPrefix(trimmed, `'''`) ||
@@ -162,10 +163,13 @@ func scanFile(path, rel string) ([]graph.Edge, []graph.Todo, []ScanError, error)
 		// open block only when comment start is at the beginning
 		if !inBlock {
 			switch {
-			case strings.HasPrefix(trimmed, "/*"):
-				if !strings.Contains(line, "*/") {
+			case strings.HasPrefix(trimmed, "/*") || strings.HasPrefix(trimmed, "{/*"):
+				if !strings.Contains(line, "*/") && !strings.Contains(line, "*/}") {
 					inBlock = true
 					blockEnd = "*/"
+					if strings.HasPrefix(trimmed, "{/*") {
+						blockEnd = "*/}"
+					}
 				}
 			case strings.HasPrefix(trimmed, "<!--"):
 				if !strings.Contains(line, "-->") {
