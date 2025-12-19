@@ -65,6 +65,9 @@ func main() {
 			os.Exit(1)
 		}
 		os.Exit(runFix(p, dir))
+	case "version", "--version", "-v":
+		fmt.Println(version)
+		return
 	case "help", "-h", "--help":
 		printHelp()
 	default:
@@ -253,4 +256,5 @@ func printHelp() {
 	fmt.Println("      --dir <path>        Target a different root")
 	fmt.Println("  todo-graph fix          Auto-add @todo-id placeholders for missing TODO ids")
 	fmt.Println("      --dir <path>        Target a different root")
+	fmt.Println("  todo-graph version      Print the CLI version")
 }
