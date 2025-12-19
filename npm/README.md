@@ -1,12 +1,36 @@
-# todo-graph
-
-A small CLI that scans your codebase for `TODO` comments, builds a dependency graph.
-
 ## Installation
 
-- Binary download: Download the appropriate archive from the GitHub releases page, unpack, and put todo-graph on your PATH.
-- Go: `go install github.com/kuri-sun/todo-graph/cmd/todo-graph@latest`.
-- Node: `npm install --save-dev todo-graph` or `npx todo-graph`.
+```bash
+npm install --save-dev todo-graph
+# or
+yarn add -D todo-graph
+# or
+pnpm add -D todo-graph
+```
+
+This package includes a Node wrapper that downloads the matching `todo-graph` binary on install. No other dependencies are needed.
+
+## Usage
+
+After install, the `todo-graph` binary is available via `npx`/`yarn dlx` or from `node_modules/.bin`:
+
+```bash
+npx todo-graph generate --dir .
+npx todo-graph check --dir .
+```
+
+Or add a script:
+
+```json
+{
+  "scripts": {
+    "todo-graph:generate": "todo-graph generate --dir .",
+    "todo-graph:check": "todo-graph check --dir ."
+  }
+}
+```
+
+Run it with `npm run todo-graph:check` (or `yarn`/`pnpm`).
 
 ## Quick start
 
