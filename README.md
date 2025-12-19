@@ -25,6 +25,7 @@ Then run:
 
 ```
 todo-graph generate   # writes .todo-graph file.
+todo-graph deps set --id <todo> --depends-on <ids>   # update @todo-deps in source
 todo-graph fix        # auto-add @todo-id placeholders for missing TODOs
 todo-graph view       # prints an indented tree of TODOs
 ```

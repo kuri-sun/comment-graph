@@ -122,6 +122,34 @@ func TestCLIViewOutputsMermaid(t *testing.T) {
 	}
 }
 
+// Integration: deps set should update @todo-deps in source and regenerate graph.
+func TestCLIDepsSetUpdatesDeps(t *testing.T) {
+	tmp := t.TempDir()
+	copyFixtureFile(t, filepath.Join("sample", "index.ts"), tmp)
+	copyFixtureFile(t, filepath.Join("sample", "users.ts"), tmp)
+
+	bin := buildCLI(t)
+	workdir := filepath.Join(tmp, "sample")
+
+	runCmd(t, bin, workdir, "deps", "set", "--id", "cleanup-sample", "--depends-on", "db-sample")
+
+	data := readFile(t, filepath.Join(workdir, "index.ts"))
+	if !strings.Contains(data, "@todo-deps db-sample") {
+		t.Fatalf("expected deps updated, got:\n%s", data)
+	}
+	if strings.Contains(data, "cache-sample") {
+		t.Fatalf("expected previous dep removed, got:\n%s", data)
+	}
+
+	code, out := runCmdExpectExit(t, bin, workdir, 0, "generate")
+	if code != 0 {
+		t.Fatalf("expected generate to pass after deps set, got %d\nout:\n%s", code, out)
+	}
+	if !strings.Contains(out, "generated") {
+		t.Fatalf("expected generate output, got:\n%s", out)
+	}
+}
+
 // Integration: fix should add placeholder ids for missing @todo-id.
 func TestCLIFixAddsMissingIDs(t *testing.T) {
 	tmp := t.TempDir()

@@ -37,6 +37,24 @@ func main() {
 			os.Exit(1)
 		}
 		os.Exit(runCheck(p, dir))
+	case "deps":
+		if len(os.Args) < 3 {
+			fmt.Fprintln(os.Stderr, "deps requires a subcommand (e.g. set)")
+			os.Exit(1)
+		}
+		sub := os.Args[2]
+		switch sub {
+		case "set":
+			dir, child, parents, err := parseDepsSetFlags(os.Args[3:])
+			if err != nil {
+				fmt.Fprintln(os.Stderr, err)
+				os.Exit(1)
+			}
+			os.Exit(runDepsSet(p, dir, child, parents))
+		default:
+			fmt.Fprintf(os.Stderr, "unknown deps subcommand: %s\n", sub)
+			os.Exit(1)
+		}
 	case "fix":
 		dir, err := parseDirFlag(os.Args[2:], "fix")
 		if err != nil {
@@ -151,6 +169,50 @@ func runCheck(p printer, dir string) int {
 	roots := findRoots(scanned)
 	p.infof("root TODOs : %d", len(roots))
 	p.infof("total TODOs: %d", len(scanned.Todos))
+	return 0
+}
+
+func runDepsSet(p printer, dir, child string, parents []string) int {
+	root, err := resolveRoot(dir)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to resolve working directory: %v\n", err)
+		return 1
+	}
+
+	scanned, scanErrs, err := engine.Scan(root)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "scan failed: %v\n", err)
+		p.resultLine(false)
+		return 1
+	}
+
+	report := engine.ValidateGraph(scanned, scanErrs)
+	if code, failed := validateAndReport(p, "Deps set validation", scanned, report, nil, false); failed {
+		return code
+	}
+
+	if err := engine.UpdateDeps(root, scanned, child, parents); err != nil {
+		fmt.Fprintf(os.Stderr, "update deps failed: %v\n", err)
+		p.resultLine(false)
+		return 1
+	}
+
+	updated, _, err := engine.Scan(root)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "rescan failed after update: %v\n", err)
+		p.resultLine(false)
+		return 1
+	}
+	if err := engine.WriteGraph(root, "", updated); err != nil {
+		fmt.Fprintf(os.Stderr, "failed to write .todo-graph: %v\n", err)
+		p.resultLine(false)
+		return 1
+	}
+
+	fmt.Println()
+	p.section("Deps set complete")
+	p.resultLine(true)
+	p.infof("updated @todo-deps for %s", child)
 	return 0
 }
 
@@ -441,6 +503,50 @@ func parseDirFlag(args []string, cmd string) (string, error) {
 	return dir, nil
 }
 
+func parseDepsSetFlags(args []string) (string, string, []string, error) {
+	dir := ""
+	id := ""
+	var parents []string
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
+		switch arg {
+		case "--dir":
+			if i+1 >= len(args) {
+				return "", "", nil, fmt.Errorf("missing value for --dir")
+			}
+			dir = args[i+1]
+			i++
+		case "--id":
+			if i+1 >= len(args) {
+				return "", "", nil, fmt.Errorf("missing value for --id")
+			}
+			id = args[i+1]
+			i++
+		case "--depends-on":
+			if i+1 >= len(args) {
+				return "", "", nil, fmt.Errorf("missing value for --depends-on")
+			}
+			list := strings.Split(args[i+1], ",")
+			for _, p := range list {
+				p = strings.TrimSpace(p)
+				if p != "" {
+					parents = append(parents, p)
+				}
+			}
+			i++
+		default:
+			return "", "", nil, fmt.Errorf("unknown flag for deps set: %s", arg)
+		}
+	}
+	if id == "" {
+		return "", "", nil, fmt.Errorf("--id is required")
+	}
+	if len(parents) == 0 {
+		return "", "", nil, fmt.Errorf("--depends-on requires at least one parent id")
+	}
+	return dir, id, parents, nil
+}
+
 func parseViewFlags(args []string) (string, bool, error) {
 	dir := ""
 	rootsOnly := false
@@ -470,6 +576,10 @@ func printHelp() {
 	fmt.Println("      --dir <path>        Run against a different root (defaults to cwd; useful in scripts)")
 	fmt.Println("      --output <path>     Write .todo-graph to a different path (for CI artifacts)")
 	fmt.Println("  todo-graph check        Validate TODO graph consistency")
+	fmt.Println("      --dir <path>        Target a different root")
+	fmt.Println("  todo-graph deps set     Update @todo-deps for a TODO id")
+	fmt.Println("      --id <id>           Target TODO id to update")
+	fmt.Println("      --depends-on <ids>  Comma-separated parent TODO ids")
 	fmt.Println("      --dir <path>        Target a different root")
 	fmt.Println("  todo-graph fix          Auto-add @todo-id placeholders for missing TODO ids")
 	fmt.Println("      --dir <path>        Target a different root")
