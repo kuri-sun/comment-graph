@@ -101,6 +101,23 @@ func TestCLICheckDetectsIsolated(t *testing.T) {
 	}
 }
 
+// Integration: JSX block comments should be parsed.
+func TestCLIGenerateParsesJSXComments(t *testing.T) {
+	tmp := t.TempDir()
+	copyFixtureFile(t, filepath.Join("jsx-block", "page.tsx"), tmp)
+
+	bin := buildCLI(t)
+	runCmd(t, bin, tmp, "generate")
+
+	got := readFile(t, filepath.Join(tmp, ".todo-graph"))
+	if !strings.Contains(got, "\n  theme-toggle:\n") || !strings.Contains(got, "\n  cta-wireup:\n") {
+		t.Fatalf("expected TODO ids in output, got:\n%s", got)
+	}
+	if !strings.Contains(got, `from: "theme-toggle"`) || !strings.Contains(got, `to: "cta-wireup"`) {
+		t.Fatalf("expected edge theme-toggle->cta-wireup, got:\n%s", got)
+	}
+}
+
 func readFile(t *testing.T, path string) string {
 	t.Helper()
 	data, err := os.ReadFile(path)
