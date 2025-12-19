@@ -193,6 +193,23 @@ func TestCLIFixAddsMissingIDs(t *testing.T) {
 	}
 }
 
+// Integration: version command/flag should print the CLI version and exit 0.
+func TestCLIVersionCommand(t *testing.T) {
+	bin := buildCLI(t)
+	dir := t.TempDir()
+
+	_, out := runCmdExpectExit(t, bin, dir, 0, "--version")
+	versionOutput := strings.TrimSpace(out)
+	if versionOutput == "" {
+		t.Fatalf("expected version output, got empty string")
+	}
+
+	_, out = runCmdExpectExit(t, bin, dir, 0, "version")
+	if strings.TrimSpace(out) != versionOutput {
+		t.Fatalf("expected version output %q, got %q", versionOutput, strings.TrimSpace(out))
+	}
+}
+
 // Integration: check should surface scan/undefined errors even without .todo-graph.
 func TestCLICheckReportsScanErrorsWithoutGraph(t *testing.T) {
 	tmp := t.TempDir()
