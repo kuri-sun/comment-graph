@@ -122,6 +122,24 @@ func TestCLIViewOutputsMermaid(t *testing.T) {
 	}
 }
 
+// Integration: check should surface scan/undefined errors even without .todo-graph.
+func TestCLICheckReportsScanErrorsWithoutGraph(t *testing.T) {
+	tmp := t.TempDir()
+	copyFixtureFile(t, filepath.Join("undefined", "index.ts"), tmp)
+
+	bin := buildCLI(t)
+	code, out := runCmdExpectExit(t, bin, tmp, 1, "check")
+	if code != 1 {
+		t.Fatalf("expected exit 1, got %d\nout:\n%s", code, out)
+	}
+	if !strings.Contains(out, "missing \"missing-id\"") {
+		t.Fatalf("expected missing id error, got:\n%s", out)
+	}
+	if strings.Contains(out, "failed to read .todo-graph") {
+		t.Fatalf("expected scan error before .todo-graph read, got:\n%s", out)
+	}
+}
+
 // Integration: view should support roots-only view.
 func TestCLIViewRootsOnly(t *testing.T) {
 	tmp := t.TempDir()
