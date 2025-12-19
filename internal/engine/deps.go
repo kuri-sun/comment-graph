@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/kuri-sun/todo-graph/internal/graph"
@@ -13,6 +14,15 @@ import (
 // It validates that the TODO and all parents exist in the scanned graph and
 // rejects TODO blocks that already declare multiple @todo-deps lines.
 func UpdateDeps(root string, g graph.Graph, target string, parents []string) error {
+	return updateDeps(root, g, target, parents, false)
+}
+
+// UpdateDepsAllowEmpty allows clearing deps (used by detach).
+func UpdateDepsAllowEmpty(root string, g graph.Graph, target string, parents []string) error {
+	return updateDeps(root, g, target, parents, true)
+}
+
+func updateDeps(root string, g graph.Graph, target string, parents []string, allowEmpty bool) error {
 	t, ok := g.Todos[target]
 	if !ok {
 		return fmt.Errorf("TODO %q not found", target)
@@ -23,7 +33,7 @@ func UpdateDeps(root string, g graph.Graph, target string, parents []string) err
 		}
 	}
 
-	if len(parents) == 0 {
+	if len(parents) == 0 && !allowEmpty {
 		return fmt.Errorf("at least one parent is required")
 	}
 
@@ -66,6 +76,13 @@ func UpdateDeps(root string, g graph.Graph, target string, parents []string) err
 		return fmt.Errorf("multiple @todo-deps entries found for %q in %s", target, t.File)
 	}
 
+	if len(parents) == 0 && allowEmpty {
+		if depsIdx >= 0 {
+			lines = append(lines[:depsIdx], lines[depsIdx+1:]...)
+		}
+		return writeLines(path, lines)
+	}
+
 	depsLine := formatDepsLine(lines[todoIdx], parents)
 
 	if depsIdx >= 0 {
@@ -95,4 +112,30 @@ func readLines(path string) ([]string, error) {
 
 func writeLines(path string, lines []string) error {
 	return os.WriteFile(path, []byte(strings.Join(lines, "\n")), 0o644)
+}
+
+// CurrentParents returns the list of parent ids (blocks edges) for a child.
+func CurrentParents(g graph.Graph, child string) []string {
+	var parents []string
+	for _, e := range g.Edges {
+		if e.To == child && e.Type == "blocks" {
+			parents = append(parents, e.From)
+		}
+	}
+	sort.Strings(parents)
+	parents = dedupeStrings(parents)
+	return parents
+}
+
+func dedupeStrings(in []string) []string {
+	seen := make(map[string]bool)
+	var out []string
+	for _, s := range in {
+		if seen[s] {
+			continue
+		}
+		seen[s] = true
+		out = append(out, s)
+	}
+	return out
 }
