@@ -1,6 +1,6 @@
 # todo-graph
 
-A small CLI that scans your codebase for `TODO` comments, builds a dependency graph, and makes it easy to track and review them.
+A small CLI that scans your codebase for `TODO` comments, builds a dependency graph.
 
 ## Installation
 
@@ -24,15 +24,32 @@ A small CLI that scans your codebase for `TODO` comments, builds a dependency gr
 Then run:
 
 ```
-todo-graph generate   # validates + writes .todo-graph
-todo-graph visualize  # shows a tree of the graph
+todo-graph generate   # writes .todo-graph file.
 ```
 
-Pass `--dir <path>` to target a different repo root (helpful in scripts/CI).
-Pass `--output <path>` to `generate` to write the graph somewhere else (handy for CI artifacts).
-Use `visualize --roots-only` to list only root TODOs.
+Will generate a yaml file:
 
-Rules:
+```yaml
+todos:
+  db-migration:
+    file: backend/db/migrate.go
+    line: 12
+
+  cache-user:
+    file: backend/cache/user.go
+    line: 34
+
+edges:
+  - from: "db-migration"
+    to: "cache-user"
+    type: "blocks"
+  - from: "cache-user"
+    to: "cleanup-sessions"
+    type: "blocks"
+```
+
+### Rules:
+
 - TODO must start on a comment line (not inline after code).
 - Metadata must immediately follow the TODO (no blank/non-comment lines); only `@todo-id` and `@todo-deps` are allowed.
 - IDs must use lowercase letters/digits/hyphens/underscores. Missing `@todo-id` is an error.

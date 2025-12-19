@@ -2,21 +2,17 @@
 
 ## Usage
 
-- `todo-graph generate` — scan for TODOs and write `.todo-graph` (runs validation first).
+- `todo-graph generate` — scan for TODOs and write `.todo-graph`.
 - `todo-graph check` — validate TODO references, detect cycles/isolated nodes, and ensure `.todo-graph` matches source.
-- `todo-graph visualize` — read `.todo-graph` and print an indented tree of the TODO graph (invokes generate first).
+- `todo-graph visualize` — read `.todo-graph` and print an indented tree of the TODO graph.
 
 ### Flags and behavior
 
-- `visualize --roots-only` — show only root TODOs (single-level view).
-- `--output <path>` — write `.todo-graph` to a custom path (useful for CI artifacts).
-- `--dir <path>` — run commands against a different repository root (useful in scripts/CI).
+- `visualize --roots-only` — show only root TODOs.
+- `generate --output <path>` — write `.todo-graph` to a custom path.
+- `--dir <path>` — run commands against a different repository root.
 - `--help`, `-h` — show usage.
 - Colors auto-enable on TTY; set `NO_COLOR=1` to disable.
-- Exit codes:
-  - `generate`: 0 on success; 1–3 on validation/write errors.
-  - `check`: 0 success, 1 undefined refs, 2 cycles, 3 isolated/out-of-date/scan errors.
-  - `visualize`: 0 success; propagates `generate` failures.
 
 ### TODO syntax
 
@@ -27,6 +23,7 @@
 ```
 
 Rules:
+
 - TODO must start on a comment line (not inline after code).
 - Metadata must immediately follow the TODO; only `@todo-id` (required) and `@todo-deps` are allowed.
 - IDs must be lowercase letters/digits/hyphens/underscores. Missing `@todo-id` is an error.
