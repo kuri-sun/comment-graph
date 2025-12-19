@@ -68,7 +68,7 @@ func runGenerate(p printer, dir, output string) int {
 	}
 
 	report := engine.ValidateGraph(graph, errs)
-	if code, failed := validateAndReport(p, graph, report, nil, false); failed {
+	if code, failed := validateAndReport(p, "Generate completed", graph, report, nil, false); failed {
 		return code
 	}
 
@@ -120,7 +120,7 @@ func runCheck(p printer, dir string) int {
 
 	report := engine.ValidateGraph(scanned, scanErrs)
 	if len(report.ScanErrors) > 0 || len(report.UndefinedEdges) > 0 || len(report.Cycles) > 0 || len(report.Isolated) > 0 {
-		if code, failed := validateAndReport(p, scanned, report, nil, false); failed {
+		if code, failed := validateAndReport(p, "Check completed", scanned, report, nil, false); failed {
 			return code
 		}
 	}
@@ -134,7 +134,7 @@ func runCheck(p printer, dir string) int {
 		return 3
 	}
 
-	if code, failed := validateAndReport(p, scanned, report, &fileGraph, true); failed {
+	if code, failed := validateAndReport(p, "Check completed", scanned, report, &fileGraph, true); failed {
 		return code
 	}
 
@@ -174,10 +174,10 @@ func runView(dir string, rootsOnly bool) int {
 }
 
 // validateAndReport renders validation errors consistently. Returns (exitCode, failed).
-func validateAndReport(p printer, scanned graph.Graph, report engine.CheckReport, fileGraph *graph.Graph, checkDrift bool) (int, bool) {
+func validateAndReport(p printer, header string, scanned graph.Graph, report engine.CheckReport, fileGraph *graph.Graph, checkDrift bool) (int, bool) {
 	printFailureHeader := func() {
 		fmt.Fprintln(os.Stderr)
-		p.section("Check completed")
+		p.section(header)
 		p.resultLine(false)
 	}
 	printErrorsSection := func() {
