@@ -4,11 +4,6 @@
 
 - `todo-graph generate` — scan for TODOs and write `.todo-graph`.
 - `todo-graph check` — validate TODO references, detect cycles/isolated nodes, and ensure `.todo-graph` matches source.
-- `todo-graph deps set --id <id> --depends-on <ids>` — overwrite `@todo-deps` for a TODO (updates source).
-- `todo-graph deps detach --id <id> --target <id>` — remove a parent from a TODO’s `@todo-deps`.
-- `todo-graph deps detach --id <id> --all` — remove all parents from a TODO’s `@todo-deps`.
-- `todo-graph fix` — auto-add `@todo-id` placeholders for TODOs missing ids.
-- `todo-graph view` — read `.todo-graph` and print an indented tree of the TODO graph.
 
 ### Flags and behavior
 
