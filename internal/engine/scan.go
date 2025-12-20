@@ -16,7 +16,6 @@ var (
 	defaultKeywords = []string{"TODO", "FIXME", "NOTE", "WARNING", "HACK", "CHANGED", "REVIEW"}
 	todoIDPattern   = regexp.MustCompile(`^[a-z0-9_-]+$`)
 	commentLine     = regexp.MustCompile(`^\s*(//|#|--|/\*|{/\*|<!--|\*|"""|''')`)
-	nonAllowedScan  = regexp.MustCompile(`[^a-z0-9]+`)
 )
 
 var commentClosers = []string{"*/", "*/}", "-->", `"""`, `'''`}
@@ -224,9 +223,6 @@ func scanFile(path, rel string, todoPattern *regexp.Regexp) ([]graph.Edge, []gra
 
 		// break association on blank or non-comment
 		if current != nil && (trimmed == "" || (!comment && !todoPattern.MatchString(trimmed))) {
-			if current.id == "" && !current.invalid {
-				current.id = generateAutoID(rel, current.line, todos)
-			}
 			if current.id != "" && !current.invalid {
 				todos[current.id] = graph.Todo{ID: current.id, File: rel, Line: current.line}
 				for _, dep := range current.deps {
@@ -254,9 +250,6 @@ func scanFile(path, rel string, todoPattern *regexp.Regexp) ([]graph.Edge, []gra
 		} else if todoPattern.MatchString(trimmedNoPrefix) {
 			// close previous pending
 			if current != nil {
-				if current.id == "" && !current.invalid {
-					current.id = generateAutoID(rel, current.line, todos)
-				}
 				if current.id != "" && !current.invalid {
 					todos[current.id] = graph.Todo{ID: current.id, File: rel, Line: current.line}
 					for _, dep := range current.deps {
@@ -314,9 +307,6 @@ func scanFile(path, rel string, todoPattern *regexp.Regexp) ([]graph.Edge, []gra
 
 	// flush pending
 	if current != nil {
-		if current.id == "" && !current.invalid {
-			current.id = generateAutoID(rel, current.line, todos)
-		}
 		if current.id != "" && !current.invalid {
 			todos[current.id] = graph.Todo{ID: current.id, File: rel, Line: current.line}
 			for _, dep := range current.deps {
@@ -340,25 +330,6 @@ func cleanCommentSuffix(s string) string {
 		s = strings.TrimSuffix(s, c)
 	}
 	return strings.TrimSpace(s)
-}
-
-func generateAutoID(rel string, line int, existing map[string]graph.Todo) string {
-	base := strings.ToLower(rel)
-	base = nonAllowedScan.ReplaceAllString(base, "-")
-	base = strings.Trim(base, "-")
-	if base == "" {
-		base = "todo"
-	}
-	candidateBase := fmt.Sprintf("todo-%s-%d", base, line)
-	candidate := candidateBase
-	i := 1
-	for {
-		if _, ok := existing[candidate]; !ok {
-			return candidate
-		}
-		candidate = fmt.Sprintf("%s-%d", candidateBase, i)
-		i++
-	}
 }
 
 func parseIDs(raw string, line int, file string) ([]string, []ScanError) {
