@@ -358,9 +358,6 @@ func parseIDs(raw string, line int, file string) ([]string, []ScanError) {
 			errs = append(errs, ScanError{File: file, Line: line, Msg: "ids must be comma-separated (e.g. a, b)"})
 			continue
 		}
-		if strings.HasPrefix(p, "#") {
-			p = strings.TrimPrefix(p, "#")
-		}
 		if !todoIDPattern.MatchString(p) {
 			errs = append(errs, ScanError{
 				File: file,
