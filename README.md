@@ -8,6 +8,11 @@ A small CLI that scans your codebase for `TODO` comments, builds a dependency gr
 - Go: `go install github.com/kuri-sun/todo-graph/cmd/todo-graph@latest`.
 - Node: `npm install --save-dev todo-graph` or `npx todo-graph`.
 
+## Usage
+
+- [CLI](cmd/todo-graph/README.md)
+- [Node wrapper](npm/README.md)
+
 ## Quick start
 
 ```ts
