@@ -1,6 +1,5 @@
-// TODO: wire API layer
-// @todo-id a
-// @todo-deps b
+// @cgraph-id: a
+// @cgraph-deps: b
 
 import { persist } from "./b"
 

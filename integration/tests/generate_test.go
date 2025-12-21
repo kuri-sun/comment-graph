@@ -8,8 +8,8 @@ import (
 	"testing"
 )
 
-// Integration: run `todo-graph generate` end-to-end against a temp TS repo with cross-file deps.
-func TestCLIGenerateWritesTodoGraph(t *testing.T) {
+// Integration: run `comment-graph generate` end-to-end against a temp TS repo with cross-file deps.
+func TestCLIGenerateWritesCommentGraph(t *testing.T) {
 	tmp := t.TempDir()
 	copyFixtureFile(t, filepath.Join("sample", "index.ts"), tmp)
 	copyFixtureFile(t, filepath.Join("sample", "users.ts"), tmp)
@@ -17,9 +17,9 @@ func TestCLIGenerateWritesTodoGraph(t *testing.T) {
 	bin := buildCLI(t)
 	runCmd(t, bin, tmp, "generate")
 
-	got := readFile(t, filepath.Join(tmp, ".todo-graph"))
+	got := readFile(t, filepath.Join(tmp, ".comment-graph"))
 	if !strings.Contains(got, "\n  cache-sample:\n") || !strings.Contains(got, "\n  db-sample:\n") || !strings.Contains(got, "\n  cleanup-sample:\n") {
-		t.Fatalf("unexpected todos section:\n%s", got)
+		t.Fatalf("unexpected nodes section:\n%s", got)
 	}
 	if !strings.Contains(got, "from: \"db-sample\"\n    to: \"cache-sample\"") {
 		t.Fatalf("expected edge db-sample->cache-sample, got:\n%s", got)
@@ -60,7 +60,7 @@ func TestCLICheckDetectsCycle(t *testing.T) {
 	}
 }
 
-// Integration: `check` should ignore .todo-graph drift and rely on source scan only.
+// Integration: `check` should ignore .comment-graph drift and rely on source scan only.
 func TestCLICheckIgnoresDrift(t *testing.T) {
 	tmp := t.TempDir()
 	copyFixtureFile(t, filepath.Join("sample", "index.ts"), tmp)
@@ -69,24 +69,24 @@ func TestCLICheckIgnoresDrift(t *testing.T) {
 	bin := buildCLI(t)
 	runCmd(t, bin, tmp, "generate")
 
-	// mutate .todo-graph to introduce drift
-	path := filepath.Join(tmp, ".todo-graph")
+	// mutate .comment-graph to introduce drift
+	path := filepath.Join(tmp, ".comment-graph")
 	contents := readFile(t, path)
 	contents = strings.Replace(contents, "cleanup-sample", "cleanup-sample-changed", 1)
 	if err := os.WriteFile(path, []byte(contents), 0o644); err != nil {
-		t.Fatalf("mutate .todo-graph: %v", err)
+		t.Fatalf("mutate .comment-graph: %v", err)
 	}
 
 	code, out := runCmdExpectExit(t, bin, tmp, 0, "check")
 	if code != 0 {
 		t.Fatalf("expected exit 0, got %d\nout:\n%s", code, out)
 	}
-	if strings.Contains(out, ".todo-graph is out of date") {
+	if strings.Contains(out, ".comment-graph is out of date") {
 		t.Fatalf("did not expect drift output, got:\n%s", out)
 	}
 }
 
-// Integration: `check` should surface isolated TODOs via exit 3.
+// Integration: `check` should surface isolated nodes via exit 3.
 func TestCLICheckDetectsIsolated(t *testing.T) {
 	tmp := t.TempDir()
 	copyFixtureFile(t, filepath.Join("isolated", "index.ts"), tmp)
@@ -96,8 +96,8 @@ func TestCLICheckDetectsIsolated(t *testing.T) {
 	if code != 3 {
 		t.Fatalf("expected exit 3, got %d\nout:\n%s", code, out)
 	}
-	if !strings.Contains(out, "isolated TODOs") {
-		t.Fatalf("expected isolated TODOs output, got:\n%s", out)
+	if !strings.Contains(out, "isolated nodes") {
+		t.Fatalf("expected isolated nodes output, got:\n%s", out)
 	}
 }
 
@@ -109,31 +109,16 @@ func TestCLIGenerateParsesJSXComments(t *testing.T) {
 	bin := buildCLI(t)
 	runCmd(t, bin, tmp, "generate")
 
-	got := readFile(t, filepath.Join(tmp, ".todo-graph"))
+	got := readFile(t, filepath.Join(tmp, ".comment-graph"))
 	if !strings.Contains(got, "\n  theme-toggle:\n") || !strings.Contains(got, "\n  cta-wireup:\n") {
-		t.Fatalf("expected TODO ids in output, got:\n%s", got)
+		t.Fatalf("expected node ids in output, got:\n%s", got)
 	}
 	if !strings.Contains(got, `from: "theme-toggle"`) || !strings.Contains(got, `to: "cta-wireup"`) {
 		t.Fatalf("expected edge theme-toggle->cta-wireup, got:\n%s", got)
 	}
 }
 
-// Integration: generate should honor custom keywords (NOTE/FIXME) and capture edges.
-func TestCLIGenerateWithCustomKeywords(t *testing.T) {
-	tmp := t.TempDir()
-	copyFixtureFile(t, filepath.Join("custom-keywords", "index.ts"), tmp)
-
-	bin := buildCLI(t)
-	runCmd(t, bin, tmp, "generate", "--keywords", "NOTE,FIXME")
-
-	got := readFile(t, filepath.Join(tmp, ".todo-graph"))
-	if !strings.Contains(got, "note-task:") || !strings.Contains(got, "fix-task:") {
-		t.Fatalf("expected note-task and fix-task in output, got:\n%s", got)
-	}
-	if !strings.Contains(got, `from: "note-task"`) || !strings.Contains(got, `to: "fix-task"`) {
-		t.Fatalf("expected edge note-task->fix-task, got:\n%s", got)
-	}
-}
+// Keywords flag removed; no equivalent integration test.
 
 func readFile(t *testing.T, path string) string {
 	t.Helper()

@@ -16,7 +16,7 @@ func TestCLIGenerateWritesJSON(t *testing.T) {
 	bin := buildCLI(t)
 	runCmd(t, bin, tmp, "generate", "--format", "json")
 
-	path := filepath.Join(tmp, ".todo-graph.json")
+	path := filepath.Join(tmp, ".comment-graph.json")
 	data := readFile(t, path)
 	var decoded map[string]any
 	if err := json.Unmarshal([]byte(data), &decoded); err != nil {
@@ -25,7 +25,7 @@ func TestCLIGenerateWritesJSON(t *testing.T) {
 	if decoded["version"] != float64(1) {
 		t.Fatalf("expected version 1, got %v", decoded["version"])
 	}
-	if _, err := os.Stat(filepath.Join(tmp, ".todo-graph")); err != nil && !os.IsNotExist(err) {
-		t.Fatalf("stat .todo-graph: %v", err)
+	if _, err := os.Stat(filepath.Join(tmp, ".comment-graph")); err != nil && !os.IsNotExist(err) {
+		t.Fatalf("stat .comment-graph: %v", err)
 	}
 }

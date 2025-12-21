@@ -8,8 +8,8 @@ import (
 	"testing"
 )
 
-// Integration: run `todo-graph generate` end-to-end against a temp TS repo with cross-file deps.
-func TestCLIGenerateWritesTodoGraph(t *testing.T) {
+// Integration: run `comment-graph generate` end-to-end against a temp TS repo with cross-file deps.
+func TestCLIGenerateWritesCommentGraph(t *testing.T) {
 	tmp := t.TempDir()
 	copyFixtureFile(t, filepath.Join("sample", "index.ts"), tmp)
 	copyFixtureFile(t, filepath.Join("sample", "users.ts"), tmp)
@@ -17,9 +17,9 @@ func TestCLIGenerateWritesTodoGraph(t *testing.T) {
 	bin := buildCLI(t)
 	runCmd(t, bin, tmp, "generate")
 
-	got := readFile(t, filepath.Join(tmp, ".todo-graph"))
+	got := readFile(t, filepath.Join(tmp, ".comment-graph"))
 	if !strings.Contains(got, "\n  cache-sample:\n") || !strings.Contains(got, "\n  db-sample:\n") || !strings.Contains(got, "\n  cleanup-sample:\n") {
-		t.Fatalf("unexpected todos section:\n%s", got)
+		t.Fatalf("unexpected nodes section:\n%s", got)
 	}
 	if !strings.Contains(got, "from: \"db-sample\"\n    to: \"cache-sample\"") {
 		t.Fatalf("expected edge db-sample->cache-sample, got:\n%s", got)
@@ -60,7 +60,7 @@ func TestCLICheckDetectsCycle(t *testing.T) {
 	}
 }
 
-// Integration: `check` should ignore .todo-graph drift and rely on source scan only.
+// Integration: `check` should ignore .comment-graph drift and rely on source scan only.
 func TestCLICheckIgnoresDrift(t *testing.T) {
 	tmp := t.TempDir()
 	copyFixtureFile(t, filepath.Join("sample", "index.ts"), tmp)
@@ -69,19 +69,19 @@ func TestCLICheckIgnoresDrift(t *testing.T) {
 	bin := buildCLI(t)
 	runCmd(t, bin, tmp, "generate")
 
-	// mutate .todo-graph to introduce drift
-	path := filepath.Join(tmp, ".todo-graph")
+	// mutate .comment-graph to introduce drift
+	path := filepath.Join(tmp, ".comment-graph")
 	contents := readFile(t, path)
 	contents = strings.Replace(contents, "cleanup-sample", "cleanup-sample-changed", 1)
 	if err := os.WriteFile(path, []byte(contents), 0o644); err != nil {
-		t.Fatalf("mutate .todo-graph: %v", err)
+		t.Fatalf("mutate .comment-graph: %v", err)
 	}
 
 	code, out := runCmdExpectExit(t, bin, tmp, 0, "check")
 	if code != 0 {
 		t.Fatalf("expected exit 0, got %d\nout:\n%s", code, out)
 	}
-	if strings.Contains(out, ".todo-graph is out of date") {
+	if strings.Contains(out, ".comment-graph is out of date") {
 		t.Fatalf("did not expect drift output, got:\n%s", out)
 	}
 }
@@ -96,8 +96,8 @@ func TestCLICheckDetectsIsolated(t *testing.T) {
 	if code != 3 {
 		t.Fatalf("expected exit 3, got %d\nout:\n%s", code, out)
 	}
-	if !strings.Contains(out, "isolated TODOs") {
-		t.Fatalf("expected isolated TODOs output, got:\n%s", out)
+	if !strings.Contains(out, "isolated nodes") {
+		t.Fatalf("expected isolated nodes output, got:\n%s", out)
 	}
 }
 
@@ -118,7 +118,7 @@ func TestCLIVersionCommand(t *testing.T) {
 	}
 }
 
-// Integration: check should surface scan/undefined errors even without .todo-graph.
+// Integration: check should surface scan/undefined errors even without .comment-graph.
 func TestCLICheckReportsScanErrorsWithoutGraph(t *testing.T) {
 	tmp := t.TempDir()
 	copyFixtureFile(t, filepath.Join("undefined", "index.ts"), tmp)
@@ -131,8 +131,8 @@ func TestCLICheckReportsScanErrorsWithoutGraph(t *testing.T) {
 	if !strings.Contains(out, "missing \"missing-id\"") {
 		t.Fatalf("expected missing id error, got:\n%s", out)
 	}
-	if strings.Contains(out, "failed to read .todo-graph") {
-		t.Fatalf("expected scan error before .todo-graph read, got:\n%s", out)
+	if strings.Contains(out, "failed to read .comment-graph") {
+		t.Fatalf("expected scan error before .comment-graph read, got:\n%s", out)
 	}
 }
 
@@ -147,9 +147,9 @@ func TestCLIDirFlagTargetsRoot(t *testing.T) {
 
 	runCmd(t, bin, otherDir, "generate", "--dir", tmp)
 
-	got := readFile(t, filepath.Join(tmp, ".todo-graph"))
+	got := readFile(t, filepath.Join(tmp, ".comment-graph"))
 	if !strings.Contains(got, "\n  cache-sample:\n") || !strings.Contains(got, "\n  db-sample:\n") || !strings.Contains(got, "\n  cleanup-sample:\n") {
-		t.Fatalf("unexpected todos section:\n%s", got)
+		t.Fatalf("unexpected nodes section:\n%s", got)
 	}
 
 	code, out := runCmdExpectExit(t, bin, otherDir, 0, "check", "--dir", tmp)
@@ -158,7 +158,7 @@ func TestCLIDirFlagTargetsRoot(t *testing.T) {
 	}
 }
 
-// Integration: generate should support writing .todo-graph to a custom path.
+// Integration: generate should support writing .comment-graph to a custom path.
 func TestCLIGenerateSupportsOutputFlag(t *testing.T) {
 	tmp := t.TempDir()
 	copyFixtureFile(t, filepath.Join("sample", "index.ts"), tmp)
@@ -171,30 +171,16 @@ func TestCLIGenerateSupportsOutputFlag(t *testing.T) {
 
 	got := readFile(t, output)
 	if !strings.Contains(got, "\n  cache-sample:\n") || !strings.Contains(got, "\n  db-sample:\n") {
-		t.Fatalf("unexpected todos section:\n%s", got)
+		t.Fatalf("unexpected nodes section:\n%s", got)
 	}
-	if _, err := os.Stat(filepath.Join(tmp, ".todo-graph")); err == nil {
-		t.Fatalf("expected default .todo-graph to be absent when using --output")
+	if _, err := os.Stat(filepath.Join(tmp, ".comment-graph")); err == nil {
+		t.Fatalf("expected default .comment-graph to be absent when using --output")
 	} else if !os.IsNotExist(err) {
-		t.Fatalf("stat default .todo-graph: %v", err)
+		t.Fatalf("stat default .comment-graph: %v", err)
 	}
 }
 
-// Integration: generate should accept --keywords and produce graph accordingly.
-func TestCLIGenerateKeywordsFlag(t *testing.T) {
-	tmp := t.TempDir()
-	copyFixtureFile(t, filepath.Join("custom-keywords", "index.ts"), tmp)
-
-	bin := buildCLI(t)
-	output := filepath.Join(tmp, "artifacts", "graph.yaml")
-
-	runCmd(t, bin, tmp, "generate", "--keywords", "NOTE,FIXME", "--output", output)
-
-	got := readFile(t, output)
-	if !strings.Contains(got, "note-task:") || !strings.Contains(got, "fix-task:") {
-		t.Fatalf("expected note-task and fix-task in output, got:\n%s", got)
-	}
-}
+// Keywords flag removed; no equivalent integration test.
 
 func readFile(t *testing.T, path string) string {
 	t.Helper()
