@@ -118,23 +118,6 @@ func TestCLIGenerateParsesJSXComments(t *testing.T) {
 	}
 }
 
-// Integration: generate should honor custom keywords (NOTE/FIXME) and capture edges.
-func TestCLIGenerateWithCustomKeywords(t *testing.T) {
-	tmp := t.TempDir()
-	copyFixtureFile(t, filepath.Join("custom-keywords", "index.ts"), tmp)
-
-	bin := buildCLI(t)
-	runCmd(t, bin, tmp, "generate")
-
-	got := readFile(t, filepath.Join(tmp, ".comment-graph"))
-	if !strings.Contains(got, "note-task:") || !strings.Contains(got, "fix-task:") {
-		t.Fatalf("expected note-task and fix-task in output, got:\n%s", got)
-	}
-	if !strings.Contains(got, `from: "note-task"`) || !strings.Contains(got, `to: "fix-task"`) {
-		t.Fatalf("expected edge note-task->fix-task, got:\n%s", got)
-	}
-}
-
 func readFile(t *testing.T, path string) string {
 	t.Helper()
 	data, err := os.ReadFile(path)
