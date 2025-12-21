@@ -21,7 +21,7 @@ func TestUpdateDepsInsertsLine(t *testing.T) {
 
 	g := graph.Graph{
 		Nodes: map[string]graph.Node{
-			"child":  {ID: "child", File: "file.go", Line: 2},
+			"child":  {ID: "child", File: "file.go", Line: 1},
 			"parent": {ID: "parent", File: "file.go", Line: 4},
 		},
 	}
@@ -52,7 +52,7 @@ func TestUpdateDepsRejectsMultipleDepsLines(t *testing.T) {
 
 	g := graph.Graph{
 		Nodes: map[string]graph.Node{
-			"child": {ID: "child", File: "file.go", Line: 2},
+			"child": {ID: "child", File: "file.go", Line: 1},
 			"a":     {ID: "a", File: "file.go", Line: 5},
 			"b":     {ID: "b", File: "file.go", Line: 6},
 		},

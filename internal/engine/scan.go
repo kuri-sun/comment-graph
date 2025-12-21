@@ -128,14 +128,14 @@ func scanFile(path, rel string) ([]graph.Edge, []graph.Node, []ScanError, error)
 		if current == nil {
 			return
 		}
+		if current.invalid {
+			current = nil
+			return
+		}
 		if current.id == "" {
 			if current.hasMeta {
 				errs = append(errs, ScanError{File: rel, Line: current.line, Msg: "metadata without @cgraph-id"})
 			}
-			current = nil
-			return
-		}
-		if current.invalid {
 			current = nil
 			return
 		}
