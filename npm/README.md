@@ -8,7 +8,7 @@ yarn add -D todo-graph
 pnpm add -D todo-graph
 ```
 
-This package includes a Node wrapper that downloads the matching `todo-graph` binary on install. No other dependencies are needed.
+This package includes a Node wrapper that downloads the matching CLI binary on install. The binary prints as `comment-graph` but the wrapper command remains `todo-graph` for now.
 
 ## Usage
 
@@ -36,25 +36,23 @@ Run it with `npm run todo-graph:check` (or `yarn`/`pnpm`).
 
 ```ts
 // user.ts
-// TODO: database migration
-// @todo-id db-migration
+// @cgraph-id: db-migration
 
 // cache.ts
-// TODO: add cache layer for user reads
-// @todo-id cache-user
-// @todo-deps db-migration
+// @cgraph-id: cache-user
+// @cgraph-deps: db-migration
 ```
 
 Then run:
 
 ```
-todo-graph generate   # writes .todo-graph file.
+todo-graph generate   # writes .comment-graph file.
 ```
 
 Will generate a yaml file:
 
 ```yaml
-todos:
+nodes:
   db-migration:
     file: backend/db/migrate.go
     line: 12
@@ -67,14 +65,10 @@ edges:
   - from: "db-migration"
     to: "cache-user"
     type: "blocks"
-  - from: "cache-user"
-    to: "cleanup-sessions"
-    type: "blocks"
 ```
 
 ### Rules:
 
-- TODO must start on a comment line (not inline after code).
-- Metadata must immediately follow the TODO (no blank/non-comment lines); only `@todo-id` and `@todo-deps` are allowed.
-- IDs must use lowercase letters/digits/hyphens/underscores. Missing `@todo-id` is an error.
-- `@todo-deps` is comma-separated; `#` is optional.
+- Metadata must be adjacent in the same comment block; only `@cgraph-id` and `@cgraph-deps` are allowed.
+- IDs must use lowercase letters/digits/hyphens/underscores. Missing `@cgraph-id` is an error.
+- `@cgraph-deps` is comma-separated.

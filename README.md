@@ -1,12 +1,12 @@
-# todo-graph
+# comment-graph
 
-A small CLI that scans your codebase for `TODO` comments, builds a dependency graph.
+A small CLI that scans your codebase for comment metadata and builds a dependency graph.
 
 ## Installation
 
-- Binary download: Download the appropriate archive from the GitHub releases page, unpack, and put todo-graph on your PATH.
-- Go: `go install github.com/kuri-sun/todo-graph/cmd/todo-graph@latest`.
-- Node: `npm install --save-dev todo-graph` or `npx todo-graph`.
+- Binary download: Download the appropriate archive from the GitHub releases page, unpack, and put comment-graph on your PATH.
+- Go: `go install github.com/kuri-sun/todo-graph/cmd/todo-graph@latest` (binary name prints as comment-graph).
+- Node: `npm install --save-dev todo-graph` or `npx todo-graph` (wrapper still named todo-graph for now).
 
 ## Usage
 
@@ -17,25 +17,23 @@ A small CLI that scans your codebase for `TODO` comments, builds a dependency gr
 
 ```ts
 // user.ts
-// TODO: database migration
-// @todo-id db-migration
+// @cgraph-id: db-migration
 
 // cache.ts
-// TODO: add cache layer for user reads
-// @todo-id cache-user
-// @todo-deps db-migration
+// @cgraph-id: cache-user
+// @cgraph-deps: db-migration
 ```
 
 Then run:
 
 ```
-todo-graph generate   # writes .todo-graph file.
+comment-graph generate   # writes .comment-graph file.
 ```
 
 Will generate a yaml file:
 
 ```yaml
-todos:
+nodes:
   db-migration:
     file: backend/db/migrate.go
     line: 12
@@ -47,8 +45,5 @@ todos:
 edges:
   - from: "db-migration"
     to: "cache-user"
-    type: "blocks"
-  - from: "cache-user"
-    to: "cleanup-sessions"
     type: "blocks"
 ```
