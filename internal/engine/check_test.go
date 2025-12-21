@@ -3,7 +3,7 @@ package engine
 import (
 	"testing"
 
-	"github.com/kuri-sun/todo-graph/internal/graph"
+	"github.com/kuri-sun/comment-graph/internal/graph"
 )
 
 // First check test: undefined references should be reported.

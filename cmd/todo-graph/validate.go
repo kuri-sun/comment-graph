@@ -6,8 +6,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/kuri-sun/todo-graph/internal/engine"
-	"github.com/kuri-sun/todo-graph/internal/graph"
+	"github.com/kuri-sun/comment-graph/internal/engine"
+	"github.com/kuri-sun/comment-graph/internal/graph"
 )
 
 // validateAndReport renders validation errors consistently. Returns (exitCode, failed).

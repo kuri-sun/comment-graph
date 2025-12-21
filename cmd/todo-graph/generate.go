@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/kuri-sun/todo-graph/internal/engine"
+	"github.com/kuri-sun/comment-graph/internal/engine"
 )
 
 func runGenerate(p printer, dir, output, errorsOutput, format string, keywords []string, allowErrors bool) int {
