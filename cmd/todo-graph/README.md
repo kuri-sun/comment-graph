@@ -2,8 +2,9 @@
 
 ## Usage
 
-- `todo-graph generate` — scan for TODOs and write `.todo-graph`.
 - `todo-graph check` — validate TODO references, detect cycles/isolated nodes, and ensure `.todo-graph` matches source.
+- `todo-graph graph` — stream JSON (graph + validation report) to stdout without writing repo files.
+- `todo-graph generate` — scan for TODOs and write `.todo-graph`.
 
 ### Flags and behavior
 

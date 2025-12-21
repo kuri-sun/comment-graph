@@ -8,7 +8,7 @@ import (
 	"github.com/kuri-sun/todo-graph/internal/engine"
 )
 
-func runGenerate(p printer, dir, output, errorsOutput, format string, keywords []string) int {
+func runGenerate(p printer, dir, output, errorsOutput, format string, keywords []string, allowErrors bool) int {
 	root, err := resolveRoot(dir)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to resolve working directory: %v\n", err)
@@ -23,7 +23,44 @@ func runGenerate(p printer, dir, output, errorsOutput, format string, keywords [
 	}
 
 	report := engine.ValidateGraph(graph, errs)
+	stdoutOutput := output == "-"
+
+	if stdoutOutput {
+		code, failed := validationStatus(graph, report, nil, false)
+		exitCode := code
+		if failed && allowErrors {
+			exitCode = 0
+		}
+		switch format {
+		case "yaml":
+			fmt.Println(engine.RenderGraphYAML(graph))
+		case "json":
+			data, err := engine.RenderGraphPayloadJSON(graph, &report)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "failed to render .todo-graph json: %v\n", err)
+				return 1
+			}
+			fmt.Println(string(data))
+		default:
+			fmt.Fprintf(os.Stderr, "unsupported format: %s\n", format)
+			return 1
+		}
+		if errorsOutput != "" {
+			if err := engine.WriteErrorsJSON(root, errorsOutput, report); err != nil {
+				fmt.Fprintf(os.Stderr, "failed to write errors json: %v\n", err)
+			}
+		}
+		if failed && !allowErrors {
+			return code
+		}
+		return exitCode
+	}
+
 	code, failed := validateAndReport(p, "Generate completed", graph, report, nil, false)
+	exitCode := code
+	if failed && allowErrors {
+		exitCode = 0
+	}
 
 	switch format {
 	case "yaml":
@@ -46,7 +83,11 @@ func runGenerate(p printer, dir, output, errorsOutput, format string, keywords [
 
 	fmt.Println()
 	p.section("Generate complete")
-	p.resultLine(true)
+	ok := !failed || allowErrors
+	p.resultLine(ok)
+	if failed && allowErrors {
+		p.warnLine("validation failed; output written due to --allow-errors")
+	}
 	target := targetPath(root, output, format)
 	abs, _ := filepath.Abs(target)
 	p.infof("generated : %s", abs)
@@ -56,7 +97,7 @@ func runGenerate(p printer, dir, output, errorsOutput, format string, keywords [
 		}
 	}
 	if failed {
-		return code
+		return exitCode
 	}
 	return 0
 }

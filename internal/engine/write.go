@@ -10,6 +10,17 @@ import (
 	"github.com/kuri-sun/todo-graph/internal/graph"
 )
 
+// RenderGraphYAML renders the graph to a YAML string.
+func RenderGraphYAML(g graph.Graph) string {
+	var b strings.Builder
+	b.WriteString("version: 1\n\n")
+
+	writeTodos(&b, g.Todos)
+	writeEdges(&b, g.Edges)
+
+	return b.String()
+}
+
 // WriteGraph renders the graph to .todo-graph (default) or a custom path.
 // If outputPath is empty, it writes to root/.todo-graph. Relative paths are
 // resolved against root.
@@ -31,13 +42,7 @@ func WriteGraph(root, outputPath string, g graph.Graph) error {
 		return err
 	}
 
-	var b strings.Builder
-	b.WriteString("version: 1\n\n")
-
-	writeTodos(&b, g.Todos)
-	writeEdges(&b, g.Edges)
-
-	return os.WriteFile(path, []byte(b.String()), 0o644)
+	return os.WriteFile(path, []byte(RenderGraphYAML(g)), 0o644)
 }
 
 func writeTodos(b *strings.Builder, todos map[string]graph.Todo) {

@@ -29,10 +29,10 @@ func TestWriteErrorsJSON(t *testing.T) {
 	if err := json.Unmarshal(data, &decoded); err != nil {
 		t.Fatalf("unmarshal: %v", err)
 	}
-	if _, ok := decoded["UndefinedEdges"]; !ok {
+	if _, ok := decoded["undefinedEdges"]; !ok {
 		t.Fatalf("expected undefined edges in errors json, got: %v", decoded)
 	}
-	if _, ok := decoded["Isolated"]; !ok {
+	if _, ok := decoded["isolated"]; !ok {
 		t.Fatalf("expected isolated in errors json, got: %v", decoded)
 	}
 }

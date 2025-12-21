@@ -9,11 +9,11 @@ import (
 
 // CheckReport contains the results of validation.
 type CheckReport struct {
-	UndefinedEdges []graph.Edge
-	Cycles         [][]string
-	Isolated       []string
-	ScanErrors     []ScanError
-	Mismatch       bool
+	UndefinedEdges []graph.Edge `json:"undefinedEdges"`
+	Cycles         [][]string   `json:"cycles"`
+	Isolated       []string     `json:"isolated"`
+	ScanErrors     []ScanError  `json:"scanErrors"`
+	Mismatch       bool         `json:"mismatch"`
 }
 
 // ValidateGraph runs dependency checks on a scanned graph.

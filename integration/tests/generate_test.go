@@ -60,8 +60,8 @@ func TestCLICheckDetectsCycle(t *testing.T) {
 	}
 }
 
-// Integration: `check` should fail with exit 3 when .todo-graph drifts from code.
-func TestCLICheckDetectsDrift(t *testing.T) {
+// Integration: `check` should ignore .todo-graph drift and rely on source scan only.
+func TestCLICheckIgnoresDrift(t *testing.T) {
 	tmp := t.TempDir()
 	copyFixtureFile(t, filepath.Join("sample", "index.ts"), tmp)
 	copyFixtureFile(t, filepath.Join("sample", "users.ts"), tmp)
@@ -77,12 +77,12 @@ func TestCLICheckDetectsDrift(t *testing.T) {
 		t.Fatalf("mutate .todo-graph: %v", err)
 	}
 
-	code, out := runCmdExpectExit(t, bin, tmp, 3, "check")
-	if code != 3 {
-		t.Fatalf("expected exit 3, got %d\nout:\n%s", code, out)
+	code, out := runCmdExpectExit(t, bin, tmp, 0, "check")
+	if code != 0 {
+		t.Fatalf("expected exit 0, got %d\nout:\n%s", code, out)
 	}
-	if !strings.Contains(out, ".todo-graph is out of date") {
-		t.Fatalf("expected drift output, got:\n%s", out)
+	if strings.Contains(out, ".todo-graph is out of date") {
+		t.Fatalf("did not expect drift output, got:\n%s", out)
 	}
 }
 

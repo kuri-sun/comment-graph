@@ -94,6 +94,27 @@ func validateAndReport(p printer, header string, scanned graph.Graph, report eng
 	return 0, false
 }
 
+// validationStatus mirrors validateAndReport's exit codes without rendering.
+func validationStatus(scanned graph.Graph, report engine.CheckReport, fileGraph *graph.Graph, checkDrift bool) (int, bool) {
+	if len(report.ScanErrors) > 0 {
+		return 3, true
+	}
+	if len(report.UndefinedEdges) > 0 {
+		return 1, true
+	}
+	if len(report.Cycles) > 0 {
+		return 2, true
+	}
+	mismatch := len(report.Isolated) > 0
+	if checkDrift && fileGraph != nil && !engine.GraphsEqual(scanned, *fileGraph) {
+		mismatch = true
+	}
+	if mismatch {
+		return 3, true
+	}
+	return 0, false
+}
+
 func findRoots(g graph.Graph) []string {
 	indegree := make(map[string]int, len(g.Todos))
 	for id := range g.Todos {

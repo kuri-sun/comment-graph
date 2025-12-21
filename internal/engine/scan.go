@@ -41,9 +41,9 @@ func compileTodoPattern(keywords []string) (*regexp.Regexp, error) {
 
 // ScanError provides contextual information for parse failures.
 type ScanError struct {
-	File string
-	Line int
-	Msg  string
+	File string `json:"file"`
+	Line int    `json:"line"`
+	Msg  string `json:"msg"`
 }
 
 // Scan walks the repository using default keywords.
