@@ -7,7 +7,6 @@
 
 ### Flags and behavior
 
-- `view --roots-only` — show only root TODOs.
 - `generate --output <path>` — write `.todo-graph` to a custom path.
 - `--dir <path>` — run commands against a different repository root.
 - `--help`, `-h` — show usage.
