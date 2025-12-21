@@ -11,7 +11,7 @@ A small CLI that scans your codebase for `TODO` comments, builds a dependency gr
 ## Usage
 
 - [CLI](cmd/todo-graph/README.md)
-- [Node wrapper](npm/README.md)
+- [Node](npm/README.md)
 
 ## Quick start
 
@@ -52,10 +52,3 @@ edges:
     to: "cleanup-sessions"
     type: "blocks"
 ```
-
-### Rules:
-
-- TODO must start on a comment line (not inline after code).
-- Metadata must immediately follow the TODO; only `@todo-id` (required) and `@todo-deps` are allowed.
-- IDs must match the regex `^[a-z0-9_-]+$`.
-- `@todo-deps` is comma-separated;
