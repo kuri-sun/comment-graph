@@ -33,6 +33,8 @@ comment-graph generate   # writes .comment-graph file.
 Will generate a yaml file:
 
 ```yaml
+version: 1
+
 nodes:
   db-migration:
     file: backend/db/migrate.go
