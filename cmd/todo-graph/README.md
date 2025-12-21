@@ -25,5 +25,5 @@ Rules:
 - TODO must start on a comment line (not inline after code).
 - Metadata must immediately follow the TODO; only `@todo-id` (required) and `@todo-deps` are allowed.
 - IDs must match the regex `^[a-z0-9_-]+$`. Missing `@todo-id` is an error.
-- `@todo-deps` is comma-separated; `#` is optional. Space-separated deps error.
+- `@todo-deps` is comma-separated; `#` prefixes are not required. Space-separated deps error.
 - TODOs and metadata are recognized in line-start comments and block comments that start at the beginning of a line (Go/TS/JS/HTML/triple-quote blocks).
