@@ -51,6 +51,6 @@ edges:
 ### Rules:
 
 - TODO must start on a comment line (not inline after code).
-- Metadata must immediately follow the TODO (no blank/non-comment lines); only `@todo-id` and `@todo-deps` are allowed.
-- IDs must use lowercase letters/digits/hyphens/underscores. Missing `@todo-id` is an error.
-- `@todo-deps` is comma-separated; `#` is optional.
+- Metadata must immediately follow the TODO; only `@todo-id` (required) and `@todo-deps` are allowed.
+- IDs must match the regex `^[a-z0-9_-]+$`.
+- `@todo-deps` is comma-separated;
