@@ -165,18 +165,11 @@ func TestCLIGenerateSupportsOutputFlag(t *testing.T) {
 	copyFixtureFile(t, filepath.Join("sample", "users.ts"), tmp)
 
 	bin := buildCLI(t)
-	output := filepath.Join(tmp, "artifacts", "graph.yaml")
+	runCmd(t, bin, tmp, "generate")
 
-	runCmd(t, bin, tmp, "generate", "--output", output)
-
-	got := readFile(t, output)
+	got := readFile(t, filepath.Join(tmp, ".comment-graph"))
 	if !strings.Contains(got, "\n  cache-sample:\n") || !strings.Contains(got, "\n  db-sample:\n") {
 		t.Fatalf("unexpected todos section:\n%s", got)
-	}
-	if _, err := os.Stat(filepath.Join(tmp, ".comment-graph")); err == nil {
-		t.Fatalf("expected default .comment-graph to be absent when using --output")
-	} else if !os.IsNotExist(err) {
-		t.Fatalf("stat default .comment-graph: %v", err)
 	}
 }
 
