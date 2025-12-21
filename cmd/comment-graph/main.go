@@ -76,19 +76,19 @@ func parseGenerateFlags(args []string) (string, string, string, bool, error) {
 		switch args[i] {
 		case "--dir":
 			if i+1 >= len(args) {
-				return "", "", "", "", false, fmt.Errorf("missing value for --dir")
+				return "", "", "", false, fmt.Errorf("missing value for --dir")
 			}
 			if dir != "" {
-				return "", "", "", "", false, fmt.Errorf("duplicate --dir flag")
+				return "", "", "", false, fmt.Errorf("duplicate --dir flag")
 			}
 			dir = args[i+1]
 			i++
 		case "--output":
 			if i+1 >= len(args) {
-				return "", "", "", "", false, fmt.Errorf("missing value for --output")
+				return "", "", "", false, fmt.Errorf("missing value for --output")
 			}
 			if output != "" {
-				return "", "", "", "", false, fmt.Errorf("duplicate --output flag")
+				return "", "", "", false, fmt.Errorf("duplicate --output flag")
 			}
 			output = args[i+1]
 			i++

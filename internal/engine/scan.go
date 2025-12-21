@@ -211,6 +211,9 @@ func scanFile(path, rel string) ([]graph.Edge, []graph.Node, []ScanError, error)
 
 		switch {
 		case strings.HasPrefix(lower, "@cgraph-id"):
+			if current != nil {
+				flush()
+			}
 			if current == nil {
 				current = &pending{}
 			}
