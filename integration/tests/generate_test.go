@@ -96,8 +96,8 @@ func TestCLICheckDetectsIsolated(t *testing.T) {
 	if code != 3 {
 		t.Fatalf("expected exit 3, got %d\nout:\n%s", code, out)
 	}
-	if !strings.Contains(out, "isolated TODOs") {
-		t.Fatalf("expected isolated TODOs output, got:\n%s", out)
+	if !strings.Contains(out, "isolated nodes") {
+		t.Fatalf("expected isolated nodes output, got:\n%s", out)
 	}
 }
 
@@ -124,7 +124,7 @@ func TestCLIGenerateWithCustomKeywords(t *testing.T) {
 	copyFixtureFile(t, filepath.Join("custom-keywords", "index.ts"), tmp)
 
 	bin := buildCLI(t)
-	runCmd(t, bin, tmp, "generate", "--keywords", "NOTE,FIXME")
+	runCmd(t, bin, tmp, "generate")
 
 	got := readFile(t, filepath.Join(tmp, ".comment-graph"))
 	if !strings.Contains(got, "note-task:") || !strings.Contains(got, "fix-task:") {

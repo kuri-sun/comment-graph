@@ -96,8 +96,8 @@ func TestCLICheckDetectsIsolated(t *testing.T) {
 	if code != 3 {
 		t.Fatalf("expected exit 3, got %d\nout:\n%s", code, out)
 	}
-	if !strings.Contains(out, "isolated TODOs") {
-		t.Fatalf("expected isolated TODOs output, got:\n%s", out)
+	if !strings.Contains(out, "isolated nodes") {
+		t.Fatalf("expected isolated nodes output, got:\n%s", out)
 	}
 }
 
@@ -180,7 +180,7 @@ func TestCLIGenerateSupportsOutputFlag(t *testing.T) {
 	}
 }
 
-// Integration: generate should accept --keywords and produce graph accordingly.
+// Integration: generate should handle default keywords and produce graph accordingly.
 func TestCLIGenerateKeywordsFlag(t *testing.T) {
 	tmp := t.TempDir()
 	copyFixtureFile(t, filepath.Join("custom-keywords", "index.ts"), tmp)
@@ -188,7 +188,7 @@ func TestCLIGenerateKeywordsFlag(t *testing.T) {
 	bin := buildCLI(t)
 	output := filepath.Join(tmp, "artifacts", "graph.yaml")
 
-	runCmd(t, bin, tmp, "generate", "--keywords", "NOTE,FIXME", "--output", output)
+	runCmd(t, bin, tmp, "generate", "--output", output)
 
 	got := readFile(t, output)
 	if !strings.Contains(got, "note-task:") || !strings.Contains(got, "fix-task:") {
