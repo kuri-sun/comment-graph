@@ -13,6 +13,8 @@ import (
 
 var depsTodoPattern = mustDefaultPattern()
 
+var commentPrefix = regexp.MustCompile(`^(\s*)(//|#|--|/\*|<!--|\*|"""|''')`)
+
 func mustDefaultPattern() *regexp.Regexp {
 	p, err := compileTodoPattern(defaultKeywords)
 	if err != nil {
@@ -111,6 +113,22 @@ func updateDeps(root string, g graph.Graph, target string, parents []string, all
 func formatDepsLine(todoLine string, parents []string) string {
 	prefix, suffix := commentDelimiters(todoLine)
 	return fmt.Sprintf("%s @todo-deps %s%s", prefix, strings.Join(parents, ", "), suffix)
+}
+
+func commentDelimiters(line string) (string, string) {
+	m := commentPrefix.FindStringSubmatch(line)
+	if len(m) < 3 {
+		return "//", ""
+	}
+	prefix := m[1] + m[2]
+	switch m[2] {
+	case "<!--":
+		return prefix, " -->"
+	case "/*":
+		return prefix, " */"
+	default:
+		return prefix, ""
+	}
 }
 
 func readLines(path string) ([]string, error) {
