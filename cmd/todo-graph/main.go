@@ -20,12 +20,12 @@ func main() {
 	cmd := os.Args[1]
 	switch cmd {
 	case "generate":
-		dir, output, format, keywords, err := parseGenerateFlags(os.Args[2:])
+		dir, output, errorsOutput, format, keywords, err := parseGenerateFlags(os.Args[2:])
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
-		os.Exit(runGenerate(p, dir, output, format, keywords))
+		os.Exit(runGenerate(p, dir, output, errorsOutput, format, keywords))
 	case "check":
 		dir, keywords, err := parseDirFlag(os.Args[2:], "check")
 		if err != nil {
@@ -60,55 +60,65 @@ func currentRoot() (string, error) {
 	return filepath.Abs(root)
 }
 
-func parseGenerateFlags(args []string) (string, string, string, []string, error) {
+func parseGenerateFlags(args []string) (string, string, string, string, []string, error) {
 	dir := ""
 	output := ""
+	errorsOutput := ""
 	format := "yaml"
 	var keywords []string
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
 		case "--dir":
 			if i+1 >= len(args) {
-				return "", "", "", nil, fmt.Errorf("missing value for --dir")
+				return "", "", "", "", nil, fmt.Errorf("missing value for --dir")
 			}
 			if dir != "" {
-				return "", "", "", nil, fmt.Errorf("duplicate --dir flag")
+				return "", "", "", "", nil, fmt.Errorf("duplicate --dir flag")
 			}
 			dir = args[i+1]
 			i++
 		case "--output":
 			if i+1 >= len(args) {
-				return "", "", "", nil, fmt.Errorf("missing value for --output")
+				return "", "", "", "", nil, fmt.Errorf("missing value for --output")
 			}
 			if output != "" {
-				return "", "", "", nil, fmt.Errorf("duplicate --output flag")
+				return "", "", "", "", nil, fmt.Errorf("duplicate --output flag")
 			}
 			output = args[i+1]
 			i++
+		case "--errors-output":
+			if i+1 >= len(args) {
+				return "", "", "", "", nil, fmt.Errorf("missing value for --errors-output")
+			}
+			if errorsOutput != "" {
+				return "", "", "", "", nil, fmt.Errorf("duplicate --errors-output flag")
+			}
+			errorsOutput = args[i+1]
+			i++
 		case "--format":
 			if i+1 >= len(args) {
-				return "", "", "", nil, fmt.Errorf("missing value for --format")
+				return "", "", "", "", nil, fmt.Errorf("missing value for --format")
 			}
 			val := strings.ToLower(args[i+1])
 			if val != "yaml" && val != "json" {
-				return "", "", "", nil, fmt.Errorf("unsupported format: %s", val)
+				return "", "", "", "", nil, fmt.Errorf("unsupported format: %s", val)
 			}
 			format = val
 			i++
 		case "--keywords":
 			if i+1 >= len(args) {
-				return "", "", "", nil, fmt.Errorf("missing value for --keywords")
+				return "", "", "", "", nil, fmt.Errorf("missing value for --keywords")
 			}
 			if len(keywords) != 0 {
-				return "", "", "", nil, fmt.Errorf("duplicate --keywords flag")
+				return "", "", "", "", nil, fmt.Errorf("duplicate --keywords flag")
 			}
 			keywords = parseKeywords(args[i+1])
 			i++
 		default:
-			return "", "", "", nil, fmt.Errorf("unknown flag for generate: %s", args[i])
+			return "", "", "", "", nil, fmt.Errorf("unknown flag for generate: %s", args[i])
 		}
 	}
-	return dir, output, format, keywords, nil
+	return dir, output, errorsOutput, format, keywords, nil
 }
 
 func parseDirFlag(args []string, cmd string) (string, []string, error) {

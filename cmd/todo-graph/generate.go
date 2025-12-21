@@ -8,7 +8,7 @@ import (
 	"github.com/kuri-sun/todo-graph/internal/engine"
 )
 
-func runGenerate(p printer, dir, output, format string, keywords []string) int {
+func runGenerate(p printer, dir, output, errorsOutput, format string, keywords []string) int {
 	root, err := resolveRoot(dir)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to resolve working directory: %v\n", err)
@@ -23,9 +23,7 @@ func runGenerate(p printer, dir, output, format string, keywords []string) int {
 	}
 
 	report := engine.ValidateGraph(graph, errs)
-	if code, failed := validateAndReport(p, "Generate completed", graph, report, nil, false); failed {
-		return code
-	}
+	code, failed := validateAndReport(p, "Generate completed", graph, report, nil, false)
 
 	switch format {
 	case "yaml":
@@ -35,7 +33,7 @@ func runGenerate(p printer, dir, output, format string, keywords []string) int {
 			return 1
 		}
 	case "json":
-		if err := engine.WriteGraphJSON(root, output, graph); err != nil {
+		if err := engine.WriteGraphJSON(root, output, graph, nil); err != nil {
 			fmt.Fprintf(os.Stderr, "failed to write .todo-graph.json: %v\n", err)
 			p.resultLine(false)
 			return 1
@@ -52,6 +50,14 @@ func runGenerate(p printer, dir, output, format string, keywords []string) int {
 	target := targetPath(root, output, format)
 	abs, _ := filepath.Abs(target)
 	p.infof("generated : %s", abs)
+	if errorsOutput != "" {
+		if err := engine.WriteErrorsJSON(root, errorsOutput, report); err != nil {
+			fmt.Fprintf(os.Stderr, "failed to write errors json: %v\n", err)
+		}
+	}
+	if failed {
+		return code
+	}
 	return 0
 }
 

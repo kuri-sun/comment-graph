@@ -20,7 +20,7 @@ func TestWriteGraphJSON(t *testing.T) {
 		},
 	}
 
-	if err := WriteGraphJSON(dir, "", g); err != nil {
+	if err := WriteGraphJSON(dir, "", g, nil); err != nil {
 		t.Fatalf("write json: %v", err)
 	}
 	path := filepath.Join(dir, ".todo-graph.json")

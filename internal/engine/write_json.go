@@ -10,7 +10,7 @@ import (
 
 // WriteGraphJSON renders the graph to .todo-graph.json in JSON format.
 // If outputPath is empty, it writes to root/.todo-graph.json. Relative paths are resolved against root.
-func WriteGraphJSON(root, outputPath string, g graph.Graph) error {
+func WriteGraphJSON(root, outputPath string, g graph.Graph, report *CheckReport) error {
 	path := outputPath
 	if path == "" {
 		path = filepath.Join(root, ".todo-graph.json")
