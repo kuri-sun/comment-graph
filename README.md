@@ -5,8 +5,8 @@ A small CLI that scans your codebase for comment metadata and builds a dependenc
 ## Installation
 
 - Binary download: Download the appropriate archive from the GitHub releases page, unpack, and put comment-graph on your PATH.
-- Go: `go install github.com/kuri-sun/todo-graph/cmd/comment-graph@latest`.
-- Node: `npm install --save-dev todo-graph` or `npx todo-graph` (wrapper still named todo-graph for now).
+- Go: `go install github.com/kuri-sun/comment-graph/cmd/comment-graph@latest`.
+- Node: `npm install --save-dev comment-graph` or `npx comment-graph`.
 
 ## Usage
 

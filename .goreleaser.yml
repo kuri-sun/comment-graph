@@ -1,13 +1,13 @@
-project_name: todo-graph
+project_name: comment-graph
 
 before:
   hooks:
     - go test ./...
 
 builds:
-  - id: todo-graph
-    main: ./cmd/todo-graph
-    binary: todo-graph
+  - id: comment-graph
+    main: ./cmd/comment-graph
+    binary: comment-graph
     env:
       - CGO_ENABLED=0
     goos:
@@ -21,7 +21,7 @@ builds:
       - -s -w -X main.version={{.Version}}
 
 archives:
-  - id: todo-graph
+  - id: comment-graph
     format_overrides:
       - goos: windows
         format: zip

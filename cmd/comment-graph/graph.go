@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/kuri-sun/todo-graph/internal/engine"
+	"github.com/kuri-sun/comment-graph/internal/engine"
 )
 
 func runGraph(p printer, dir string, allowErrors bool) int {

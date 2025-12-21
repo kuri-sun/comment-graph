@@ -1,22 +1,22 @@
 ## Installation
 
 ```bash
-npm install --save-dev todo-graph
+npm install --save-dev comment-graph
 # or
-yarn add -D todo-graph
+yarn add -D comment-graph
 # or
-pnpm add -D todo-graph
+pnpm add -D comment-graph
 ```
 
-This package includes a Node wrapper that downloads the matching CLI binary on install. The binary prints as `comment-graph` but the wrapper command remains `todo-graph` for now.
+This package includes a Node wrapper that downloads the matching CLI binary on install.
 
 ## Usage
 
-After install, the `todo-graph` binary is available via `npx`/`yarn dlx` or from `node_modules/.bin`:
+After install, the `comment-graph` binary is available via `npx`/`yarn dlx` or from `node_modules/.bin`:
 
 ```bash
-npx todo-graph generate --dir .
-npx todo-graph check --dir .
+npx comment-graph generate --dir .
+npx comment-graph check --dir .
 ```
 
 Or add a script:
@@ -24,13 +24,13 @@ Or add a script:
 ```json
 {
   "scripts": {
-    "todo-graph:generate": "todo-graph generate --dir .",
-    "todo-graph:check": "todo-graph check --dir ."
+    "comment-graph:generate": "comment-graph generate --dir .",
+    "comment-graph:check": "comment-graph check --dir ."
   }
 }
 ```
 
-Run it with `npm run todo-graph:check` (or `yarn`/`pnpm`).
+Run it with `npm run comment-graph:check` (or `yarn`/`pnpm`).
 
 ## Quick start
 
@@ -46,7 +46,7 @@ Run it with `npm run todo-graph:check` (or `yarn`/`pnpm`).
 Then run:
 
 ```
-todo-graph generate   # writes .comment-graph file.
+comment-graph generate   # writes .comment-graph file.
 ```
 
 Will generate a yaml file:

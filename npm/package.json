@@ -1,9 +1,9 @@
 {
-  "name": "todo-graph",
+  "name": "comment-graph",
   "version": "0.1.0",
-  "description": "CLI wrapper for todo-graph with binary downloader",
+  "description": "CLI wrapper for comment-graph with binary downloader",
   "bin": {
-    "todo-graph": "./bin/todo-graph.js"
+    "comment-graph": "./bin/comment-graph.js"
   },
   "scripts": {
     "postinstall": "node ./scripts/postinstall.js"
@@ -15,7 +15,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/todo-graph/todo-graph.git"
+    "url": "https://github.com/kuri-sun/comment-graph.git"
   },
   "engines": {
     "node": ">=16"

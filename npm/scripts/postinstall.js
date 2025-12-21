@@ -18,22 +18,22 @@ async function main() {
   const platform = mapPlatform(process.platform);
   const arch = mapArch(process.arch);
   const version = pkg.version;
-  const repo = "kuri-sun/todo-graph";
+  const repo = "kuri-sun/comment-graph";
   const host = "https://github.com";
 
   const ext = platform === "windows" ? "zip" : "tar.gz";
-  const archiveName = `todo-graph_${version}_${platform}_${arch}.${ext}`;
+  const archiveName = `comment-graph_${version}_${platform}_${arch}.${ext}`;
   const url = `${host}/${repo}/releases/download/v${version}/${archiveName}`;
 
   const archivePath = path.join(destDir, archiveName);
-  console.log(`Downloading todo-graph ${version} (${platform}/${arch}) from ${url}`);
+  console.log(`Downloading comment-graph ${version} (${platform}/${arch}) from ${url}`);
   await download(url, archivePath);
 
   const extractDir = path.join(destDir, "tmp-extract");
   mkdirSync(extractDir, { recursive: true });
   extract(archivePath, extractDir, ext);
 
-  const binaryName = platform === "windows" ? "todo-graph.exe" : "todo-graph";
+  const binaryName = platform === "windows" ? "comment-graph.exe" : "comment-graph";
   const extractedPath = path.join(extractDir, binaryName);
   if (!existsSync(extractedPath)) {
     console.error("Failed to locate extracted binary at", extractedPath);
@@ -43,7 +43,7 @@ async function main() {
   const finalPath = path.join(destDir, binaryName);
   renameSync(extractedPath, finalPath);
   chmodSync(finalPath, 0o755);
-  console.log("Installed todo-graph binary to", finalPath);
+  console.log("Installed comment-graph binary to", finalPath);
 }
 
 function mapPlatform(p) {

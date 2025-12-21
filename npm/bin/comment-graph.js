@@ -4,10 +4,10 @@ const { existsSync } = require("node:fs");
 const path = require("node:path");
 
 const isWin = process.platform === "win32";
-const bin = path.join(__dirname, isWin ? "todo-graph.exe" : "todo-graph");
+const bin = path.join(__dirname, isWin ? "comment-graph.exe" : "comment-graph");
 
 if (!existsSync(bin)) {
-  console.error("todo-graph binary is missing. Try reinstalling the package.");
+  console.error("comment-graph binary is missing. Try reinstalling the package.");
   process.exit(1);
 }
 
