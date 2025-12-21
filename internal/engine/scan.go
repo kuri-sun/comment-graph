@@ -86,11 +86,6 @@ func Scan(root string) (graph.Graph, []ScanError, error) {
 	}, errs, nil
 }
 
-// ScanWithKeywords is kept for compatibility; keywords are ignored in comment-graph mode.
-func ScanWithKeywords(root string, _ []string) (graph.Graph, []ScanError, error) {
-	return Scan(root)
-}
-
 func shouldSkipDir(name string) bool {
 	switch name {
 	case ".git", "node_modules", "vendor", ".idea", ".vscode":
