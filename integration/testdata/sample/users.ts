@@ -1,11 +1,9 @@
-// TODO: migrate user table
-// @todo-id db-sample
+// @cgraph-id: db-sample
 
 const cache: Record<string, User> = {}
 
-// TODO: add cache layer for user reads
-// @todo-id cache-sample
-// @todo-deps db-sample
+// @cgraph-id: cache-sample
+// @cgraph-deps: db-sample
 export async function getUser(id: string): Promise<User> {
   const cached = cache[id]
   if (cached) return cached

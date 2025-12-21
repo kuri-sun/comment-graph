@@ -4,17 +4,17 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/kuri-sun/todo-graph/internal/engine"
+	"github.com/kuri-sun/comment-graph/internal/engine"
 )
 
-func runCheck(p printer, dir string, keywords []string) int {
+func runCheck(p printer, dir string) int {
 	root, err := resolveRoot(dir)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to resolve working directory: %v\n", err)
 		return 1
 	}
 
-	scanned, scanErrs, err := engine.ScanWithKeywords(root, keywords)
+	scanned, scanErrs, err := engine.Scan(root)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "scan failed: %v\n", err)
 		p.resultLine(false)
@@ -32,7 +32,7 @@ func runCheck(p printer, dir string, keywords []string) int {
 	p.section("Check complete")
 	p.resultLine(true)
 	roots := findRoots(scanned)
-	p.infof("root TODOs : %d", len(roots))
-	p.infof("total TODOs: %d", len(scanned.Todos))
+	p.infof("root nodes : %d", len(roots))
+	p.infof("total nodes: %d", len(scanned.Nodes))
 	return 0
 }

@@ -1,4 +1,4 @@
-module github.com/kuri-sun/todo-graph
+module github.com/kuri-sun/comment-graph
 
 go 1.25.4
 

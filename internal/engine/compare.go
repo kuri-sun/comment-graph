@@ -3,20 +3,20 @@ package engine
 import (
 	"sort"
 
-	"github.com/kuri-sun/todo-graph/internal/graph"
+	"github.com/kuri-sun/comment-graph/internal/graph"
 )
 
-// GraphsEqual returns true if todos and edges match, ignoring ordering.
+// GraphsEqual returns true if nodes and edges match, ignoring ordering.
 func GraphsEqual(a, b graph.Graph) bool {
-	if len(a.Todos) != len(b.Todos) {
+	if len(a.Nodes) != len(b.Nodes) {
 		return false
 	}
-	for id, t := range a.Todos {
-		bt, ok := b.Todos[id]
+	for id, n := range a.Nodes {
+		bn, ok := b.Nodes[id]
 		if !ok {
 			return false
 		}
-		if t.File != bt.File || t.Line != bt.Line {
+		if n.File != bn.File || n.Line != bn.Line {
 			return false
 		}
 	}

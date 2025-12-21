@@ -8,24 +8,15 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/kuri-sun/todo-graph/internal/graph"
+	"github.com/kuri-sun/comment-graph/internal/graph"
 )
 
-var depsTodoPattern = mustDefaultPattern()
-
 var commentPrefix = regexp.MustCompile(`^(\s*)(//|#|--|/\*|<!--|\*|"""|''')`)
+var cgraphIDLine = regexp.MustCompile(`@cgraph-id`)
 
-func mustDefaultPattern() *regexp.Regexp {
-	p, err := compileTodoPattern(defaultKeywords)
-	if err != nil {
-		panic(err)
-	}
-	return p
-}
-
-// UpdateDeps updates @todo-deps for a given TODO id in its source file.
-// It validates that the TODO and all parents exist in the scanned graph and
-// rejects TODO blocks that already declare multiple @todo-deps lines.
+// UpdateDeps updates @cgraph-deps for a given node id in its source file.
+// It validates that the node and all parents exist in the scanned graph and
+// rejects blocks that already declare multiple @cgraph-deps lines.
 func UpdateDeps(root string, g graph.Graph, target string, parents []string) error {
 	return updateDeps(root, g, target, parents, false)
 }
@@ -36,13 +27,13 @@ func UpdateDepsAllowEmpty(root string, g graph.Graph, target string, parents []s
 }
 
 func updateDeps(root string, g graph.Graph, target string, parents []string, allowEmpty bool) error {
-	t, ok := g.Todos[target]
+	n, ok := g.Nodes[target]
 	if !ok {
-		return fmt.Errorf("TODO %q not found", target)
+		return fmt.Errorf("node %q not found", target)
 	}
 	for _, p := range parents {
-		if _, ok := g.Todos[p]; !ok {
-			return fmt.Errorf("parent TODO %q not found", p)
+		if _, ok := g.Nodes[p]; !ok {
+			return fmt.Errorf("parent node %q not found", p)
 		}
 	}
 
@@ -50,35 +41,35 @@ func updateDeps(root string, g graph.Graph, target string, parents []string, all
 		return fmt.Errorf("at least one parent is required")
 	}
 
-	path := filepath.Join(root, t.File)
+	path := filepath.Join(root, n.File)
 	lines, err := readLines(path)
 	if err != nil {
 		return err
 	}
-	if t.Line <= 0 || t.Line-1 >= len(lines) {
-		return fmt.Errorf("invalid line for %q: %d", target, t.Line)
+	if n.Line <= 0 || n.Line-1 >= len(lines) {
+		return fmt.Errorf("invalid line for %q: %d", target, n.Line)
 	}
 
 	// find metadata block boundaries
-	todoIdx := t.Line - 1
-	insertIdx := todoIdx + 1
+	idIdx := n.Line - 1
+	insertIdx := idIdx + 1
 	var depsIdx int = -1
 	var depsCount int
 
-	for i := todoIdx + 1; i < len(lines); i++ {
+	for i := idIdx + 1; i < len(lines); i++ {
 		trimmed := strings.TrimSpace(lines[i])
 		cleaned := strings.TrimSpace(commentLine.ReplaceAllString(trimmed, ""))
 		lower := strings.ToLower(cleaned)
-		if trimmed == "" || (!strings.HasPrefix(lower, "@") && depsTodoPattern.MatchString(cleaned)) || !commentLine.MatchString(trimmed) {
+		if trimmed == "" || (!strings.HasPrefix(lower, "@") && cgraphIDLine.MatchString(cleaned)) || !commentLine.MatchString(trimmed) {
 			break
 		}
-		if strings.HasPrefix(lower, "@todo-id") {
+		if strings.HasPrefix(lower, "@cgraph-id") {
 			insertIdx = i + 1
 		}
-		if strings.HasPrefix(lower, "@todo-deps") {
+		if strings.HasPrefix(lower, "@cgraph-deps") {
 			depsCount++
 			if depsCount > 1 {
-				return fmt.Errorf("multiple @todo-deps entries found for %q in %s:%d", target, t.File, i+1)
+				return fmt.Errorf("multiple @cgraph-deps entries found for %q in %s:%d", target, n.File, i+1)
 			}
 			depsIdx = i
 			insertIdx = i
@@ -86,7 +77,7 @@ func updateDeps(root string, g graph.Graph, target string, parents []string, all
 	}
 
 	if depsCount > 1 {
-		return fmt.Errorf("multiple @todo-deps entries found for %q in %s", target, t.File)
+		return fmt.Errorf("multiple @cgraph-deps entries found for %q in %s", target, n.File)
 	}
 
 	if len(parents) == 0 && allowEmpty {
@@ -96,7 +87,7 @@ func updateDeps(root string, g graph.Graph, target string, parents []string, all
 		return writeLines(path, lines)
 	}
 
-	depsLine := formatDepsLine(lines[todoIdx], parents)
+	depsLine := formatDepsLine(lines[idIdx], parents)
 
 	if depsIdx >= 0 {
 		lines[depsIdx] = depsLine
@@ -110,9 +101,9 @@ func updateDeps(root string, g graph.Graph, target string, parents []string, all
 	return writeLines(path, lines)
 }
 
-func formatDepsLine(todoLine string, parents []string) string {
-	prefix, suffix := commentDelimiters(todoLine)
-	return fmt.Sprintf("%s @todo-deps %s%s", prefix, strings.Join(parents, ", "), suffix)
+func formatDepsLine(idLine string, parents []string) string {
+	prefix, suffix := commentDelimiters(idLine)
+	return fmt.Sprintf("%s @cgraph-deps %s%s", prefix, strings.Join(parents, ", "), suffix)
 }
 
 func commentDelimiters(line string) (string, string) {

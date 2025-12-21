@@ -6,8 +6,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/kuri-sun/todo-graph/internal/engine"
-	"github.com/kuri-sun/todo-graph/internal/graph"
+	"github.com/kuri-sun/comment-graph/internal/engine"
+	"github.com/kuri-sun/comment-graph/internal/graph"
 )
 
 // validateAndReport renders validation errors consistently. Returns (exitCode, failed).
@@ -38,7 +38,7 @@ func validateAndReport(p printer, header string, scanned graph.Graph, report eng
 			fmt.Fprintf(os.Stderr, "  - %s:%d: %s\n", e.File, e.Line, e.Msg)
 		}
 		fmt.Fprintln(os.Stderr)
-		p.warnLine("Fix scan issues and re-run `todo-graph check`.")
+		p.warnLine("Fix scan issues and re-run `comment-graph check`.")
 		fmt.Fprintln(os.Stderr)
 		return 3, true
 	}
@@ -46,17 +46,17 @@ func validateAndReport(p printer, header string, scanned graph.Graph, report eng
 	if len(report.UndefinedEdges) > 0 {
 		ensureHeader(&headerPrinted)
 		for _, e := range report.UndefinedEdges {
-			fromTodo, fromOK := scanned.Todos[e.From]
-			toTodo, toOK := scanned.Todos[e.To]
+			fromNode, fromOK := scanned.Nodes[e.From]
+			toNode, toOK := scanned.Nodes[e.To]
 			switch {
 			case !fromOK && toOK:
-				fmt.Fprintf(os.Stderr, "  - missing %q (at %s:%d)\n", e.From, toTodo.File, toTodo.Line)
+				fmt.Fprintf(os.Stderr, "  - missing %q (at %s:%d)\n", e.From, toNode.File, toNode.Line)
 			case fromOK && !toOK:
-				fmt.Fprintf(os.Stderr, "  - missing %q (at %s:%d)\n", e.To, fromTodo.File, fromTodo.Line)
+				fmt.Fprintf(os.Stderr, "  - missing %q (at %s:%d)\n", e.To, fromNode.File, fromNode.Line)
 			case !fromOK && !toOK:
-				fmt.Fprintf(os.Stderr, "  - missing TODOs %q and %q (edge present but ids undefined)\n", e.From, e.To)
+				fmt.Fprintf(os.Stderr, "  - missing nodes %q and %q (edge present but ids undefined)\n", e.From, e.To)
 			default:
-				fmt.Fprintf(os.Stderr, "  - undefined TODO reference: %s -> %s\n", e.From, e.To)
+				fmt.Fprintf(os.Stderr, "  - undefined node reference: %s -> %s\n", e.From, e.To)
 			}
 		}
 		fmt.Fprintln(os.Stderr)
@@ -76,13 +76,13 @@ func validateAndReport(p printer, header string, scanned graph.Graph, report eng
 	mismatch := false
 	if len(report.Isolated) > 0 {
 		ensureHeader(&headerPrinted)
-		fmt.Fprintf(os.Stderr, "  - isolated TODOs: %s\n", strings.Join(report.Isolated, ", "))
+		fmt.Fprintf(os.Stderr, "  - isolated nodes: %s\n", strings.Join(report.Isolated, ", "))
 		mismatch = true
 	}
 
 	if checkDrift && fileGraph != nil && !engine.GraphsEqual(scanned, *fileGraph) {
 		ensureHeader(&headerPrinted)
-		fmt.Fprintln(os.Stderr, "  - .todo-graph is out of date (run todo-graph generate)")
+		fmt.Fprintln(os.Stderr, "  - .comment-graph is out of date (run comment-graph generate)")
 		mismatch = true
 	}
 
@@ -116,8 +116,8 @@ func validationStatus(scanned graph.Graph, report engine.CheckReport, fileGraph 
 }
 
 func findRoots(g graph.Graph) []string {
-	indegree := make(map[string]int, len(g.Todos))
-	for id := range g.Todos {
+	indegree := make(map[string]int, len(g.Nodes))
+	for id := range g.Nodes {
 		indegree[id] = 0
 	}
 	for _, e := range g.Edges {
@@ -144,7 +144,7 @@ func renderTree(g graph.Graph, rootsOnly bool) []string {
 
 	roots := findRoots(g)
 	if len(roots) == 0 {
-		for id := range g.Todos {
+		for id := range g.Nodes {
 			roots = append(roots, id)
 		}
 		sort.Strings(roots)
@@ -153,10 +153,10 @@ func renderTree(g graph.Graph, rootsOnly bool) []string {
 	if rootsOnly {
 		lines := make([]string, 0, len(roots))
 		for _, r := range roots {
-			t, ok := g.Todos[r]
+			n, ok := g.Nodes[r]
 			location := ""
 			if ok {
-				location = fmt.Sprintf(" (%s:%d)", t.File, t.Line)
+				location = fmt.Sprintf(" (%s:%d)", n.File, n.Line)
 			}
 			lines = append(lines, fmt.Sprintf("- [] %s%s", r, location))
 		}
@@ -168,10 +168,10 @@ func renderTree(g graph.Graph, rootsOnly bool) []string {
 
 	var dfs func(id string, depth int, stack map[string]bool)
 	dfs = func(id string, depth int, stack map[string]bool) {
-		t, ok := g.Todos[id]
+		n, ok := g.Nodes[id]
 		location := ""
 		if ok {
-			location = fmt.Sprintf(" (%s:%d)", t.File, t.Line)
+			location = fmt.Sprintf(" (%s:%d)", n.File, n.Line)
 		}
 		prefix := strings.Repeat("    ", depth)
 		if stack[id] {

@@ -5,17 +5,17 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/kuri-sun/todo-graph/internal/engine"
+	"github.com/kuri-sun/comment-graph/internal/engine"
 )
 
-func runGenerate(p printer, dir, output, errorsOutput, format string, keywords []string, allowErrors bool) int {
+func runGenerate(p printer, dir, output, format string, allowErrors bool) int {
 	root, err := resolveRoot(dir)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to resolve working directory: %v\n", err)
 		return 1
 	}
 
-	graph, errs, err := engine.ScanWithKeywords(root, keywords)
+	graph, errs, err := engine.Scan(root)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "scan failed: %v\n", err)
 		p.resultLine(false)
@@ -35,20 +35,15 @@ func runGenerate(p printer, dir, output, errorsOutput, format string, keywords [
 		case "yaml":
 			fmt.Println(engine.RenderGraphYAML(graph))
 		case "json":
-			data, err := engine.RenderGraphPayloadJSON(graph, &report)
+			data, err := engine.RenderGraphPayloadJSON(graph, &report, false)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "failed to render .todo-graph json: %v\n", err)
+				fmt.Fprintf(os.Stderr, "failed to render .comment-graph json: %v\n", err)
 				return 1
 			}
 			fmt.Println(string(data))
 		default:
 			fmt.Fprintf(os.Stderr, "unsupported format: %s\n", format)
 			return 1
-		}
-		if errorsOutput != "" {
-			if err := engine.WriteErrorsJSON(root, errorsOutput, report); err != nil {
-				fmt.Fprintf(os.Stderr, "failed to write errors json: %v\n", err)
-			}
 		}
 		if failed && !allowErrors {
 			return code
@@ -65,13 +60,13 @@ func runGenerate(p printer, dir, output, errorsOutput, format string, keywords [
 	switch format {
 	case "yaml":
 		if err := engine.WriteGraph(root, output, graph); err != nil {
-			fmt.Fprintf(os.Stderr, "failed to write .todo-graph: %v\n", err)
+			fmt.Fprintf(os.Stderr, "failed to write .comment-graph: %v\n", err)
 			p.resultLine(false)
 			return 1
 		}
 	case "json":
 		if err := engine.WriteGraphJSON(root, output, graph, nil); err != nil {
-			fmt.Fprintf(os.Stderr, "failed to write .todo-graph.json: %v\n", err)
+			fmt.Fprintf(os.Stderr, "failed to write .comment-graph.json: %v\n", err)
 			p.resultLine(false)
 			return 1
 		}
@@ -91,11 +86,6 @@ func runGenerate(p printer, dir, output, errorsOutput, format string, keywords [
 	target := targetPath(root, output, format)
 	abs, _ := filepath.Abs(target)
 	p.infof("generated : %s", abs)
-	if errorsOutput != "" {
-		if err := engine.WriteErrorsJSON(root, errorsOutput, report); err != nil {
-			fmt.Fprintf(os.Stderr, "failed to write errors json: %v\n", err)
-		}
-	}
 	if failed {
 		return exitCode
 	}
@@ -109,9 +99,9 @@ func targetPath(root, output, format string) string {
 		}
 		return filepath.Join(root, output)
 	}
-	filename := ".todo-graph"
+	filename := ".comment-graph"
 	if format == "json" {
-		filename = ".todo-graph.json"
+		filename = ".comment-graph.json"
 	}
 	return filepath.Join(root, filename)
 }

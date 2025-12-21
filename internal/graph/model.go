@@ -1,13 +1,13 @@
 package graph
 
-// Todo represents a TODO comment discovered in source code.
-type Todo struct {
+// Node represents a comment-graph node discovered in source code.
+type Node struct {
 	ID   string
 	File string
 	Line int
 }
 
-// Edge models a dependency edge between TODOs.
+// Edge models a dependency edge between nodes.
 // Only the "blocks" type is supported in the MVP.
 type Edge struct {
 	From string
@@ -15,8 +15,8 @@ type Edge struct {
 	Type string
 }
 
-// Graph is the in-memory representation of .todo-graph.
+// Graph is the in-memory representation of .comment-graph.
 type Graph struct {
-	Todos map[string]Todo
+	Nodes map[string]Node
 	Edges []Edge
 }

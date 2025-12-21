@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/kuri-sun/todo-graph/internal/graph"
+	"github.com/kuri-sun/comment-graph/internal/graph"
 )
 
 // CheckReport contains the results of validation.
@@ -35,11 +35,11 @@ func ValidateGraph(g graph.Graph, scanErrs []ScanError) CheckReport {
 func findUndefined(g graph.Graph) []graph.Edge {
 	var out []graph.Edge
 	for _, e := range g.Edges {
-		if _, ok := g.Todos[e.From]; !ok {
+		if _, ok := g.Nodes[e.From]; !ok {
 			out = append(out, e)
 			continue
 		}
-		if _, ok := g.Todos[e.To]; !ok {
+		if _, ok := g.Nodes[e.To]; !ok {
 			out = append(out, e)
 			continue
 		}
@@ -49,7 +49,7 @@ func findUndefined(g graph.Graph) []graph.Edge {
 
 func findIsolated(g graph.Graph) []string {
 	degree := make(map[string]int)
-	for id := range g.Todos {
+	for id := range g.Nodes {
 		degree[id] = 0
 	}
 	for _, e := range g.Edges {
@@ -97,7 +97,7 @@ func findCycles(g graph.Graph) [][]string {
 		stack = stack[:len(stack)-1]
 	}
 
-	for id := range g.Todos {
+	for id := range g.Nodes {
 		if !visited[id] {
 			dfs(id)
 		}

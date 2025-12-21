@@ -1,22 +1,22 @@
 ## Installation
 
 ```bash
-npm install --save-dev todo-graph
+npm install --save-dev comment-graph
 # or
-yarn add -D todo-graph
+yarn add -D comment-graph
 # or
-pnpm add -D todo-graph
+pnpm add -D comment-graph
 ```
 
-This package includes a Node wrapper that downloads the matching `todo-graph` binary on install. No other dependencies are needed.
+This package includes a Node wrapper that downloads the matching CLI binary on install.
 
 ## Usage
 
-After install, the `todo-graph` binary is available via `npx`/`yarn dlx` or from `node_modules/.bin`:
+After install, the `comment-graph` binary is available via `npx`/`yarn dlx` or from `node_modules/.bin`:
 
 ```bash
-npx todo-graph generate --dir .
-npx todo-graph check --dir .
+npx comment-graph generate --dir .
+npx comment-graph check --dir .
 ```
 
 Or add a script:
@@ -24,37 +24,35 @@ Or add a script:
 ```json
 {
   "scripts": {
-    "todo-graph:generate": "todo-graph generate --dir .",
-    "todo-graph:check": "todo-graph check --dir ."
+    "comment-graph:generate": "comment-graph generate --dir .",
+    "comment-graph:check": "comment-graph check --dir ."
   }
 }
 ```
 
-Run it with `npm run todo-graph:check` (or `yarn`/`pnpm`).
+Run it with `npm run comment-graph:check` (or `yarn`/`pnpm`).
 
 ## Quick start
 
 ```ts
 // user.ts
-// TODO: database migration
-// @todo-id db-migration
+// @cgraph-id: db-migration
 
 // cache.ts
-// TODO: add cache layer for user reads
-// @todo-id cache-user
-// @todo-deps db-migration
+// @cgraph-id: cache-user
+// @cgraph-deps: db-migration
 ```
 
 Then run:
 
 ```
-todo-graph generate   # writes .todo-graph file.
+comment-graph generate   # writes .comment-graph file.
 ```
 
 Will generate a yaml file:
 
 ```yaml
-todos:
+nodes:
   db-migration:
     file: backend/db/migrate.go
     line: 12
@@ -67,14 +65,10 @@ edges:
   - from: "db-migration"
     to: "cache-user"
     type: "blocks"
-  - from: "cache-user"
-    to: "cleanup-sessions"
-    type: "blocks"
 ```
 
 ### Rules:
 
-- TODO must start on a comment line (not inline after code).
-- Metadata must immediately follow the TODO (no blank/non-comment lines); only `@todo-id` and `@todo-deps` are allowed.
-- IDs must use lowercase letters/digits/hyphens/underscores. Missing `@todo-id` is an error.
-- `@todo-deps` is comma-separated; `#` is optional.
+- Metadata must be adjacent in the same comment block; only `@cgraph-id` and `@cgraph-deps` are allowed.
+- IDs must use lowercase letters/digits/hyphens/underscores. Missing `@cgraph-id` is an error.
+- `@cgraph-deps` is comma-separated.
