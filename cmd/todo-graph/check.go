@@ -32,7 +32,7 @@ func runCheck(p printer, dir string, keywords []string) int {
 	p.section("Check complete")
 	p.resultLine(true)
 	roots := findRoots(scanned)
-	p.infof("root TODOs : %d", len(roots))
-	p.infof("total TODOs: %d", len(scanned.Todos))
+	p.infof("root nodes : %d", len(roots))
+	p.infof("total nodes: %d", len(scanned.Nodes))
 	return 0
 }

@@ -12,8 +12,7 @@ import (
 func TestUpdateDepsInsertsLine(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "file.go")
-	content := `// TODO: item
-// @todo-id child
+	content := `// @cgraph-id: child
 // some comment
 `
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
@@ -21,7 +20,7 @@ func TestUpdateDepsInsertsLine(t *testing.T) {
 	}
 
 	g := graph.Graph{
-		Todos: map[string]graph.Todo{
+		Nodes: map[string]graph.Node{
 			"child":  {ID: "child", File: "file.go", Line: 2},
 			"parent": {ID: "parent", File: "file.go", Line: 4},
 		},
@@ -35,7 +34,7 @@ func TestUpdateDepsInsertsLine(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read file: %v", err)
 	}
-	if !strings.Contains(string(data), "@todo-deps parent") {
+	if !strings.Contains(string(data), "@cgraph-deps parent") {
 		t.Fatalf("expected deps line inserted, got:\n%s", data)
 	}
 }
@@ -43,17 +42,16 @@ func TestUpdateDepsInsertsLine(t *testing.T) {
 func TestUpdateDepsRejectsMultipleDepsLines(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "file.go")
-	content := `// TODO: item
-// @todo-id child
-// @todo-deps a
-// @todo-deps b
+	content := `// @cgraph-id: child
+// @cgraph-deps: a
+// @cgraph-deps: b
 `
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		t.Fatalf("write: %v", err)
 	}
 
 	g := graph.Graph{
-		Todos: map[string]graph.Todo{
+		Nodes: map[string]graph.Node{
 			"child": {ID: "child", File: "file.go", Line: 2},
 			"a":     {ID: "a", File: "file.go", Line: 5},
 			"b":     {ID: "b", File: "file.go", Line: 6},

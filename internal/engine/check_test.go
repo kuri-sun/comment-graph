@@ -9,7 +9,7 @@ import (
 // First check test: undefined references should be reported.
 func TestValidateGraphReportsUndefinedEdges(t *testing.T) {
 	g := graph.Graph{
-		Todos: map[string]graph.Todo{
+		Nodes: map[string]graph.Node{
 			"a": {ID: "a"},
 		},
 		Edges: []graph.Edge{
@@ -30,7 +30,7 @@ func TestValidateGraphReportsUndefinedEdges(t *testing.T) {
 
 func TestValidateGraphDetectsCycles(t *testing.T) {
 	g := graph.Graph{
-		Todos: map[string]graph.Todo{
+		Nodes: map[string]graph.Node{
 			"a": {ID: "a"},
 			"b": {ID: "b"},
 		},
@@ -59,7 +59,7 @@ func TestValidateGraphDetectsCycles(t *testing.T) {
 
 func TestValidateGraphDetectsIsolated(t *testing.T) {
 	g := graph.Graph{
-		Todos: map[string]graph.Todo{
+		Nodes: map[string]graph.Node{
 			"a": {ID: "a"},
 			"b": {ID: "b"},
 		},
@@ -77,13 +77,13 @@ func TestValidateGraphDetectsIsolated(t *testing.T) {
 
 func TestValidateGraphMismatchedGraphFlagged(t *testing.T) {
 	scanned := graph.Graph{
-		Todos: map[string]graph.Todo{
+		Nodes: map[string]graph.Node{
 			"a": {ID: "a"},
 		},
 		Edges: nil,
 	}
 	report := ValidateGraph(scanned, nil)
-	fileGraph := graph.Graph{Todos: map[string]graph.Todo{}}
+	fileGraph := graph.Graph{Nodes: map[string]graph.Node{}}
 
 	mismatch := !GraphsEqual(scanned, fileGraph)
 	if !mismatch {
@@ -94,7 +94,7 @@ func TestValidateGraphMismatchedGraphFlagged(t *testing.T) {
 
 func TestValidateGraphDetectsSelfCycle(t *testing.T) {
 	g := graph.Graph{
-		Todos: map[string]graph.Todo{
+		Nodes: map[string]graph.Node{
 			"a": {ID: "a"},
 		},
 		Edges: []graph.Edge{
@@ -128,7 +128,7 @@ func TestValidateGraphScanErrorsSurfaced(t *testing.T) {
 
 func TestValidateGraphReportsUndefinedFrom(t *testing.T) {
 	g := graph.Graph{
-		Todos: map[string]graph.Todo{
+		Nodes: map[string]graph.Node{
 			"b": {ID: "b"},
 		},
 		Edges: []graph.Edge{
@@ -149,7 +149,7 @@ func TestValidateGraphReportsUndefinedFrom(t *testing.T) {
 
 func TestValidateGraphIsolatedWithConnectedNodes(t *testing.T) {
 	g := graph.Graph{
-		Todos: map[string]graph.Todo{
+		Nodes: map[string]graph.Node{
 			"a": {ID: "a"},
 			"b": {ID: "b"},
 			"c": {ID: "c"},
@@ -168,7 +168,7 @@ func TestValidateGraphIsolatedWithConnectedNodes(t *testing.T) {
 
 func TestValidateGraphReportsUndefinedEdgeWithBothMissing(t *testing.T) {
 	g := graph.Graph{
-		Todos: map[string]graph.Todo{},
+		Nodes: map[string]graph.Node{},
 		Edges: []graph.Edge{
 			{From: "x", To: "y", Type: "blocks"},
 		},

@@ -9,6 +9,7 @@
 ### Flags and behavior
 
 - `--keywords <list>` — comma-separated keywords to scan (default: `TODO,FIXME,NOTE,WARNING,HACK,CHANGED,REVIEW`).
+- `graph --include-non-dependants` — add TODOs with no dependencies to the JSON payload for editor tooling.
 - `generate --output <path>` — write `.todo-graph` to a custom path.
 - `generate --format <yaml|json>` — choose output format (json writes `.todo-graph.json`).
 - `generate --allow-errors` — write output even when validation fails (errors included in JSON output).

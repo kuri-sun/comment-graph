@@ -9,11 +9,11 @@ import (
 	"github.com/kuri-sun/todo-graph/internal/graph"
 )
 
-// First write/read test: round-trip a simple graph through .todo-graph.
+// First write/read test: round-trip a simple graph through .comment-graph.
 func TestWriteReadGraphRoundTrip(t *testing.T) {
 	dir := t.TempDir()
 	g := graph.Graph{
-		Todos: map[string]graph.Todo{
+		Nodes: map[string]graph.Node{
 			"a": {ID: "a", File: "a.go", Line: 1},
 			"b": {ID: "b", File: "b.go", Line: 2},
 		},
@@ -25,8 +25,8 @@ func TestWriteReadGraphRoundTrip(t *testing.T) {
 	if err := WriteGraph(dir, "", g); err != nil {
 		t.Fatalf("write graph: %v", err)
 	}
-	if _, err := os.Stat(filepath.Join(dir, ".todo-graph")); err != nil {
-		t.Fatalf(".todo-graph not written: %v", err)
+	if _, err := os.Stat(filepath.Join(dir, ".comment-graph")); err != nil {
+		t.Fatalf(".comment-graph not written: %v", err)
 	}
 
 	read, err := ReadGraph(dir)
@@ -41,20 +41,20 @@ func TestWriteReadGraphRoundTrip(t *testing.T) {
 func TestWriteGraphEmptyFormatsSections(t *testing.T) {
 	dir := t.TempDir()
 	g := graph.Graph{
-		Todos: map[string]graph.Todo{},
+		Nodes: map[string]graph.Node{},
 		Edges: nil,
 	}
 
 	if err := WriteGraph(dir, "", g); err != nil {
 		t.Fatalf("write graph: %v", err)
 	}
-	data, err := os.ReadFile(filepath.Join(dir, ".todo-graph"))
+	data, err := os.ReadFile(filepath.Join(dir, ".comment-graph"))
 	if err != nil {
 		t.Fatalf("read file: %v", err)
 	}
 	content := string(data)
-	if !strings.Contains(content, "todos: {}") {
-		t.Fatalf("expected empty todos map, got: %s", content)
+	if !strings.Contains(content, "nodes: {}") {
+		t.Fatalf("expected empty nodes map, got: %s", content)
 	}
 	if !strings.Contains(content, "edges:\n  []") {
 		t.Fatalf("expected empty edges list, got: %s", content)
@@ -63,10 +63,10 @@ func TestWriteGraphEmptyFormatsSections(t *testing.T) {
 
 func TestWriteGraphCustomPath(t *testing.T) {
 	dir := t.TempDir()
-	output := filepath.Join(dir, "artifacts", "custom.todo-graph")
+	output := filepath.Join(dir, "artifacts", "custom.comment-graph")
 
 	g := graph.Graph{
-		Todos: map[string]graph.Todo{
+		Nodes: map[string]graph.Node{
 			"custom": {ID: "custom", File: "a.go", Line: 1},
 		},
 		Edges: nil,
@@ -82,10 +82,10 @@ func TestWriteGraphCustomPath(t *testing.T) {
 	if !strings.Contains(content, "custom:") {
 		t.Fatalf("expected content to contain todo id, got: %s", content)
 	}
-	if _, err := os.Stat(filepath.Join(dir, ".todo-graph")); err == nil {
-		t.Fatalf("default .todo-graph should not be written when output path is provided")
+	if _, err := os.Stat(filepath.Join(dir, ".comment-graph")); err == nil {
+		t.Fatalf("default .comment-graph should not be written when output path is provided")
 	} else if !os.IsNotExist(err) {
-		t.Fatalf("stat default .todo-graph: %v", err)
+		t.Fatalf("stat default .comment-graph: %v", err)
 	}
 }
 

@@ -35,7 +35,7 @@ func runGenerate(p printer, dir, output, errorsOutput, format string, keywords [
 		case "yaml":
 			fmt.Println(engine.RenderGraphYAML(graph))
 		case "json":
-			data, err := engine.RenderGraphPayloadJSON(graph, &report)
+			data, err := engine.RenderGraphPayloadJSON(graph, &report, false)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "failed to render .todo-graph json: %v\n", err)
 				return 1

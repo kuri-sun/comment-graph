@@ -27,12 +27,12 @@ func main() {
 		}
 		os.Exit(runGenerate(p, dir, output, errorsOutput, format, keywords, allowErrors))
 	case "graph":
-		dir, keywords, allowErrors, err := parseGraphFlags(os.Args[2:])
+		dir, keywords, allowErrors, includeNonDependants, err := parseGraphFlags(os.Args[2:])
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
-		os.Exit(runGraph(p, dir, keywords, allowErrors))
+		os.Exit(runGraph(p, dir, keywords, allowErrors, includeNonDependants))
 	case "check":
 		dir, keywords, err := parseDirFlag(os.Args[2:], "check")
 		if err != nil {
@@ -134,37 +134,43 @@ func parseGenerateFlags(args []string) (string, string, string, string, []string
 	return dir, output, errorsOutput, format, keywords, allowErrors, nil
 }
 
-func parseGraphFlags(args []string) (string, []string, bool, error) {
+func parseGraphFlags(args []string) (string, []string, bool, bool, error) {
 	dir := ""
 	allowErrors := false
+	includeNonDependants := false
 	var keywords []string
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
 		case "--dir":
 			if i+1 >= len(args) {
-				return "", nil, false, fmt.Errorf("missing value for --dir")
+				return "", nil, false, false, fmt.Errorf("missing value for --dir")
 			}
 			dir = args[i+1]
 			i++
 		case "--keywords":
 			if i+1 >= len(args) {
-				return "", nil, false, fmt.Errorf("missing value for --keywords")
+				return "", nil, false, false, fmt.Errorf("missing value for --keywords")
 			}
 			if len(keywords) != 0 {
-				return "", nil, false, fmt.Errorf("duplicate --keywords flag")
+				return "", nil, false, false, fmt.Errorf("duplicate --keywords flag")
 			}
 			keywords = parseKeywords(args[i+1])
 			i++
 		case "--allow-errors":
 			if allowErrors {
-				return "", nil, false, fmt.Errorf("duplicate --allow-errors flag")
+				return "", nil, false, false, fmt.Errorf("duplicate --allow-errors flag")
 			}
 			allowErrors = true
+		case "--include-non-dependants":
+			if includeNonDependants {
+				return "", nil, false, false, fmt.Errorf("duplicate --include-non-dependants flag")
+			}
+			includeNonDependants = true
 		default:
-			return "", nil, false, fmt.Errorf("unknown flag for graph: %s", args[i])
+			return "", nil, false, false, fmt.Errorf("unknown flag for graph: %s", args[i])
 		}
 	}
-	return dir, keywords, allowErrors, nil
+	return dir, keywords, allowErrors, includeNonDependants, nil
 }
 
 func parseDirFlag(args []string, cmd string) (string, []string, error) {
@@ -222,6 +228,7 @@ func printHelp() {
 	fmt.Println("      --dir <path>        Target a different root")
 	fmt.Println("      --keywords <list>   Comma-separated keywords to scan")
 	fmt.Println("      --allow-errors      Return success even if validation finds issues (payload still emitted)")
+	fmt.Println("      --include-non-dependants Include TODOs with no dependencies in payload")
 	fmt.Println("  todo-graph check        Validate TODO graph consistency")
 	fmt.Println("      --dir <path>        Target a different root")
 	fmt.Println("      --keywords <list>   Comma-separated keywords to scan")

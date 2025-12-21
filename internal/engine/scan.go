@@ -13,31 +13,11 @@ import (
 )
 
 var (
-	defaultKeywords = []string{"TODO", "FIXME", "NOTE", "WARNING", "HACK", "CHANGED", "REVIEW"}
-	todoIDPattern   = regexp.MustCompile(`^[a-z0-9_-]+$`)
+	cgraphIDPattern = regexp.MustCompile(`^[a-z0-9_-]+$`)
 	commentLine     = regexp.MustCompile(`^\s*(//|#|--|/\*|{/\*|<!--|\*|"""|''')`)
 )
 
 var commentClosers = []string{"*/", "*/}", "-->", `"""`, `'''`}
-
-func compileTodoPattern(keywords []string) (*regexp.Regexp, error) {
-	if len(keywords) == 0 {
-		return nil, fmt.Errorf("at least one keyword is required")
-	}
-	var parts []string
-	for _, k := range keywords {
-		k = strings.TrimSpace(k)
-		if k == "" {
-			continue
-		}
-		parts = append(parts, regexp.QuoteMeta(k))
-	}
-	if len(parts) == 0 {
-		return nil, fmt.Errorf("at least one keyword is required")
-	}
-	pat := fmt.Sprintf(`(?i)\b(%s)\b:?`, strings.Join(parts, "|"))
-	return regexp.Compile(pat)
-}
 
 // ScanError provides contextual information for parse failures.
 type ScanError struct {
@@ -46,26 +26,13 @@ type ScanError struct {
 	Msg  string `json:"msg"`
 }
 
-// Scan walks the repository using default keywords.
+// Scan walks the repository and builds a comment graph.
 func Scan(root string) (graph.Graph, []ScanError, error) {
-	return ScanWithKeywords(root, defaultKeywords)
-}
-
-// ScanWithKeywords walks the repository, parses TODO blocks, and returns the graph.
-// keywords defines which markers are recognized (e.g. TODO, FIXME).
-func ScanWithKeywords(root string, keywords []string) (graph.Graph, []ScanError, error) {
-	if len(keywords) == 0 {
-		keywords = defaultKeywords
-	}
-	pattern, err := compileTodoPattern(keywords)
-	if err != nil {
-		return graph.Graph{}, nil, err
-	}
-	todos := make(map[string]graph.Todo)
+	nodes := make(map[string]graph.Node)
 	var edges []graph.Edge
 	var errs []ScanError
 
-	err = filepath.WalkDir(root, func(path string, d fs.DirEntry, walkErr error) error {
+	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			return walkErr
 		}
@@ -75,7 +42,7 @@ func ScanWithKeywords(root string, keywords []string) (graph.Graph, []ScanError,
 		if d.IsDir() {
 			return nil
 		}
-		if d.Name() == ".todo-graph" {
+		if d.Name() == ".comment-graph" {
 			return nil
 		}
 		if d.Type()&fs.ModeSymlink != 0 {
@@ -86,23 +53,23 @@ func ScanWithKeywords(root string, keywords []string) (graph.Graph, []ScanError,
 		if err != nil {
 			return err
 		}
-		fileEdges, fileTodos, fileErrs, err := scanFile(path, rel, pattern)
+		fileEdges, fileNodes, fileErrs, err := scanFile(path, rel)
 		if err != nil {
 			return err
 		}
 		for _, e := range fileErrs {
 			errs = append(errs, e)
 		}
-		for _, t := range fileTodos {
-			if existing, ok := todos[t.ID]; ok {
+		for _, n := range fileNodes {
+			if existing, ok := nodes[n.ID]; ok {
 				errs = append(errs, ScanError{
 					File: rel,
-					Line: t.Line,
-					Msg:  fmt.Sprintf("duplicate TODO id %q (first defined in %s:%d)", t.ID, existing.File, existing.Line),
+					Line: n.Line,
+					Msg:  fmt.Sprintf("duplicate comment-graph id %q (first defined in %s:%d)", n.ID, existing.File, existing.Line),
 				})
 				continue
 			}
-			todos[t.ID] = t
+			nodes[n.ID] = n
 		}
 		edges = append(edges, fileEdges...)
 		return nil
@@ -114,9 +81,14 @@ func ScanWithKeywords(root string, keywords []string) (graph.Graph, []ScanError,
 	edges = dedupeEdges(edges)
 
 	return graph.Graph{
-		Todos: todos,
+		Nodes: nodes,
 		Edges: edges,
 	}, errs, nil
+}
+
+// ScanWithKeywords is kept for compatibility; keywords are ignored in comment-graph mode.
+func ScanWithKeywords(root string, _ []string) (graph.Graph, []ScanError, error) {
+	return Scan(root)
 }
 
 func shouldSkipDir(name string) bool {
@@ -128,7 +100,7 @@ func shouldSkipDir(name string) bool {
 	}
 }
 
-func scanFile(path, rel string, todoPattern *regexp.Regexp) ([]graph.Edge, []graph.Todo, []ScanError, error) {
+func scanFile(path, rel string) ([]graph.Edge, []graph.Node, []ScanError, error) {
 	content, err := os.ReadFile(path)
 	if err != nil {
 		return nil, nil, nil, err
@@ -141,15 +113,38 @@ func scanFile(path, rel string, todoPattern *regexp.Regexp) ([]graph.Edge, []gra
 
 	var edges []graph.Edge
 	var errs []ScanError
-	todos := make(map[string]graph.Todo)
+	nodes := make(map[string]graph.Node)
 
 	type pending struct {
 		line    int
 		id      string
 		deps    []string
 		invalid bool
+		hasMeta bool
 	}
 	var current *pending
+
+	flush := func() {
+		if current == nil {
+			return
+		}
+		if current.id == "" {
+			if current.hasMeta {
+				errs = append(errs, ScanError{File: rel, Line: current.line, Msg: "metadata without @cgraph-id"})
+			}
+			current = nil
+			return
+		}
+		if current.invalid {
+			current = nil
+			return
+		}
+		nodes[current.id] = graph.Node{ID: current.id, File: rel, Line: current.line}
+		for _, dep := range current.deps {
+			edges = append(edges, graph.Edge{From: dep, To: current.id, Type: "blocks"})
+		}
+		current = nil
+	}
 
 	inBlock := false
 	blockEnd := ""
@@ -158,7 +153,6 @@ func scanFile(path, rel string, todoPattern *regexp.Regexp) ([]graph.Edge, []gra
 		line := lines[i]
 		trimmed := strings.TrimSpace(line)
 
-		skip := false
 		isCommentStart := strings.HasPrefix(trimmed, "//") ||
 			strings.HasPrefix(trimmed, "#") ||
 			strings.HasPrefix(trimmed, "--") ||
@@ -171,28 +165,11 @@ func scanFile(path, rel string, todoPattern *regexp.Regexp) ([]graph.Edge, []gra
 
 		comment := inBlock || isCommentStart
 
-		// inline comment markers with TODO/keyword after code
-		if !comment {
-			inlineMarkers := []string{"//", "#", "--", "/*", "{/*"}
-			for _, m := range inlineMarkers {
-				if idx := strings.Index(line, m); idx > 0 && todoPattern.MatchString(line[idx:]) {
-					errs = append(errs, ScanError{File: rel, Line: i + 1, Msg: "TODO must start at a comment line"})
-					skip = true
-					break
-				}
-			}
-			if skip {
-				continue
-			}
-		}
-
-		// close block if end appears on this line
 		if inBlock && blockEnd != "" && strings.Contains(line, blockEnd) {
 			inBlock = false
 			blockEnd = ""
 		}
 
-		// open block only when comment start is at the beginning
 		if !inBlock {
 			switch {
 			case strings.HasPrefix(trimmed, "/*") || strings.HasPrefix(trimmed, "{/*"):
@@ -221,107 +198,68 @@ func scanFile(path, rel string, todoPattern *regexp.Regexp) ([]graph.Edge, []gra
 			}
 		}
 
-		// break association on blank or non-comment
-		if current != nil && (trimmed == "" || (!comment && !todoPattern.MatchString(trimmed))) {
-			if current.id != "" && !current.invalid {
-				todos[current.id] = graph.Todo{ID: current.id, File: rel, Line: current.line}
-				for _, dep := range current.deps {
-					edges = append(edges, graph.Edge{From: dep, To: current.id, Type: "blocks"})
-				}
-			}
-			current = nil
-		}
-
-		// inline keyword not allowed (only if a comment marker is present)
-		if todoPattern.MatchString(line) && !isCommentStart && !inBlock &&
-			(strings.Contains(line, "//") || strings.Contains(line, "#") || strings.Contains(line, "--") || strings.Contains(line, "/*")) {
-			errs = append(errs, ScanError{File: rel, Line: i + 1, Msg: "TODO must start at a comment line"})
-			continue
+		if current != nil && (trimmed == "" || !comment) {
+			flush()
 		}
 
 		if !comment {
 			continue
 		}
 
-		trimmedNoPrefix := strings.TrimSpace(commentLine.ReplaceAllString(line, ""))
-		lowerTrimmed := strings.ToLower(trimmedNoPrefix)
-		if strings.HasPrefix(lowerTrimmed, "@todo-") {
-			// metadata handled below
-		} else if todoPattern.MatchString(trimmedNoPrefix) {
-			// close previous pending
-			if current != nil {
-				if current.id != "" && !current.invalid {
-					todos[current.id] = graph.Todo{ID: current.id, File: rel, Line: current.line}
-					for _, dep := range current.deps {
-						edges = append(edges, graph.Edge{From: dep, To: current.id, Type: "blocks"})
-					}
-				}
-			}
-
-			current = &pending{line: i + 1}
-			continue
-		}
-
-		// metadata handling
 		cleaned := strings.TrimSpace(commentLine.ReplaceAllString(line, ""))
 		lower := strings.ToLower(cleaned)
-		if current == nil {
-			if strings.HasPrefix(lower, "@todo-id") || strings.HasPrefix(lower, "@todo-deps") {
-				errs = append(errs, ScanError{File: rel, Line: i + 1, Msg: "metadata without a preceding TODO"})
-			}
-			continue
-		}
 
 		switch {
-		case strings.HasPrefix(lower, "@todo-id"):
-			val := strings.TrimSpace(strings.TrimPrefix(cleaned, "@todo-id"))
+		case strings.HasPrefix(lower, "@cgraph-id"):
+			if current == nil {
+				current = &pending{}
+			}
+			current.hasMeta = true
+			val := strings.TrimSpace(strings.TrimPrefix(cleaned, "@cgraph-id"))
 			val = strings.TrimPrefix(val, ":")
 			val = strings.TrimSpace(cleanCommentSuffix(val))
 			if val == "" {
-				errs = append(errs, ScanError{File: rel, Line: i + 1, Msg: "TODO id must not be empty"})
+				errs = append(errs, ScanError{File: rel, Line: i + 1, Msg: "@cgraph-id must not be empty"})
+				current.invalid = true
 				continue
 			}
-			if !todoIDPattern.MatchString(val) {
+			if !cgraphIDPattern.MatchString(val) {
 				errs = append(errs, ScanError{
 					File: rel,
 					Line: i + 1,
-					Msg:  fmt.Sprintf("TODO id %q must use lowercase letters, digits, hyphens, or underscores", val),
+					Msg:  fmt.Sprintf("@cgraph-id %q must use lowercase letters, digits, hyphens, or underscores", val),
 				})
 				current.invalid = true
 				continue
 			}
 			current.id = val
-		case strings.HasPrefix(lower, "@todo-deps"):
-			raw := strings.TrimSpace(strings.TrimPrefix(cleaned, "@todo-deps"))
+			current.line = i + 1
+		case strings.HasPrefix(lower, "@cgraph-deps"):
+			if current == nil {
+				current = &pending{line: i + 1}
+			}
+			current.hasMeta = true
+			raw := strings.TrimSpace(strings.TrimPrefix(cleaned, "@cgraph-deps"))
 			raw = strings.TrimPrefix(raw, ":")
 			raw = strings.TrimSpace(cleanCommentSuffix(raw))
 			ids, idErrs := parseIDs(raw, i+1, rel)
 			errs = append(errs, idErrs...)
 			current.deps = append(current.deps, ids...)
 		case strings.HasPrefix(lower, "@"):
-			errs = append(errs, ScanError{File: rel, Line: i + 1, Msg: "unknown metadata (use @todo-id or @todo-deps)"})
+			errs = append(errs, ScanError{File: rel, Line: i + 1, Msg: "unknown metadata (use @cgraph-id or @cgraph-deps)"})
 		default:
-			// plain comment allowed
+			// plain comment line, keep association
 		}
 	}
 
-	// flush pending
-	if current != nil {
-		if current.id != "" && !current.invalid {
-			todos[current.id] = graph.Todo{ID: current.id, File: rel, Line: current.line}
-			for _, dep := range current.deps {
-				edges = append(edges, graph.Edge{From: dep, To: current.id, Type: "blocks"})
-			}
-		}
+	flush()
+
+	var nodeList []graph.Node
+	for _, n := range nodes {
+		nodeList = append(nodeList, n)
 	}
 
-	// convert todo map to slice
-	var todoList []graph.Todo
-	for _, t := range todos {
-		todoList = append(todoList, t)
-	}
-
-	return edges, todoList, errs, nil
+	return edges, nodeList, errs, nil
 }
 
 func cleanCommentSuffix(s string) string {
@@ -358,7 +296,7 @@ func parseIDs(raw string, line int, file string) ([]string, []ScanError) {
 			errs = append(errs, ScanError{File: file, Line: line, Msg: "ids must be comma-separated (e.g. a, b)"})
 			continue
 		}
-		if !todoIDPattern.MatchString(p) {
+		if !cgraphIDPattern.MatchString(p) {
 			errs = append(errs, ScanError{
 				File: file,
 				Line: line,

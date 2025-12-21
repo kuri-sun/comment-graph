@@ -7,7 +7,7 @@ import (
 	"github.com/kuri-sun/todo-graph/internal/engine"
 )
 
-func runGraph(p printer, dir string, keywords []string, allowErrors bool) int {
+func runGraph(p printer, dir string, keywords []string, allowErrors bool, includeNonDependants bool) int {
 	root, err := resolveRoot(dir)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to resolve working directory: %v\n", err)
@@ -28,7 +28,7 @@ func runGraph(p printer, dir string, keywords []string, allowErrors bool) int {
 		exitCode = 0
 	}
 
-	payload, err := engine.RenderGraphPayloadJSON(graph, &report)
+	payload, err := engine.RenderGraphPayloadJSON(graph, &report, includeNonDependants)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to render graph json: %v\n", err)
 		return 1
