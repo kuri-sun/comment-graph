@@ -9,7 +9,7 @@ import (
 )
 
 // Integration: run `comment-graph generate` end-to-end against a temp TS repo with cross-file deps.
-func TestCLIGenerateWritesCommentGraph(t *testing.T) {
+func TestCLIGenerateWritesTodoGraph(t *testing.T) {
 	tmp := t.TempDir()
 	copyFixtureFile(t, filepath.Join("sample", "index.ts"), tmp)
 	copyFixtureFile(t, filepath.Join("sample", "users.ts"), tmp)
@@ -19,7 +19,7 @@ func TestCLIGenerateWritesCommentGraph(t *testing.T) {
 
 	got := readFile(t, filepath.Join(tmp, ".comment-graph"))
 	if !strings.Contains(got, "\n  cache-sample:\n") || !strings.Contains(got, "\n  db-sample:\n") || !strings.Contains(got, "\n  cleanup-sample:\n") {
-		t.Fatalf("unexpected nodes section:\n%s", got)
+		t.Fatalf("unexpected todos section:\n%s", got)
 	}
 	if !strings.Contains(got, "from: \"db-sample\"\n    to: \"cache-sample\"") {
 		t.Fatalf("expected edge db-sample->cache-sample, got:\n%s", got)
@@ -96,8 +96,8 @@ func TestCLICheckDetectsIsolated(t *testing.T) {
 	if code != 3 {
 		t.Fatalf("expected exit 3, got %d\nout:\n%s", code, out)
 	}
-	if !strings.Contains(out, "isolated nodes") {
-		t.Fatalf("expected isolated nodes output, got:\n%s", out)
+	if !strings.Contains(out, "isolated TODOs") {
+		t.Fatalf("expected isolated TODOs output, got:\n%s", out)
 	}
 }
 
@@ -149,7 +149,7 @@ func TestCLIDirFlagTargetsRoot(t *testing.T) {
 
 	got := readFile(t, filepath.Join(tmp, ".comment-graph"))
 	if !strings.Contains(got, "\n  cache-sample:\n") || !strings.Contains(got, "\n  db-sample:\n") || !strings.Contains(got, "\n  cleanup-sample:\n") {
-		t.Fatalf("unexpected nodes section:\n%s", got)
+		t.Fatalf("unexpected todos section:\n%s", got)
 	}
 
 	code, out := runCmdExpectExit(t, bin, otherDir, 0, "check", "--dir", tmp)
@@ -171,7 +171,7 @@ func TestCLIGenerateSupportsOutputFlag(t *testing.T) {
 
 	got := readFile(t, output)
 	if !strings.Contains(got, "\n  cache-sample:\n") || !strings.Contains(got, "\n  db-sample:\n") {
-		t.Fatalf("unexpected nodes section:\n%s", got)
+		t.Fatalf("unexpected todos section:\n%s", got)
 	}
 	if _, err := os.Stat(filepath.Join(tmp, ".comment-graph")); err == nil {
 		t.Fatalf("expected default .comment-graph to be absent when using --output")
@@ -180,7 +180,21 @@ func TestCLIGenerateSupportsOutputFlag(t *testing.T) {
 	}
 }
 
-// Keywords flag removed; no equivalent integration test.
+// Integration: generate should accept --keywords and produce graph accordingly.
+func TestCLIGenerateKeywordsFlag(t *testing.T) {
+	tmp := t.TempDir()
+	copyFixtureFile(t, filepath.Join("custom-keywords", "index.ts"), tmp)
+
+	bin := buildCLI(t)
+	output := filepath.Join(tmp, "artifacts", "graph.yaml")
+
+	runCmd(t, bin, tmp, "generate", "--keywords", "NOTE,FIXME", "--output", output)
+
+	got := readFile(t, output)
+	if !strings.Contains(got, "note-task:") || !strings.Contains(got, "fix-task:") {
+		t.Fatalf("expected note-task and fix-task in output, got:\n%s", got)
+	}
+}
 
 func readFile(t *testing.T, path string) string {
 	t.Helper()

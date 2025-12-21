@@ -9,7 +9,7 @@ import (
 )
 
 // Integration: run `comment-graph generate` end-to-end against a temp TS repo with cross-file deps.
-func TestCLIGenerateWritesCommentGraph(t *testing.T) {
+func TestCLIGenerateWritesTodoGraph(t *testing.T) {
 	tmp := t.TempDir()
 	copyFixtureFile(t, filepath.Join("sample", "index.ts"), tmp)
 	copyFixtureFile(t, filepath.Join("sample", "users.ts"), tmp)
@@ -19,7 +19,7 @@ func TestCLIGenerateWritesCommentGraph(t *testing.T) {
 
 	got := readFile(t, filepath.Join(tmp, ".comment-graph"))
 	if !strings.Contains(got, "\n  cache-sample:\n") || !strings.Contains(got, "\n  db-sample:\n") || !strings.Contains(got, "\n  cleanup-sample:\n") {
-		t.Fatalf("unexpected nodes section:\n%s", got)
+		t.Fatalf("unexpected todos section:\n%s", got)
 	}
 	if !strings.Contains(got, "from: \"db-sample\"\n    to: \"cache-sample\"") {
 		t.Fatalf("expected edge db-sample->cache-sample, got:\n%s", got)
@@ -86,7 +86,7 @@ func TestCLICheckIgnoresDrift(t *testing.T) {
 	}
 }
 
-// Integration: `check` should surface isolated nodes via exit 3.
+// Integration: `check` should surface isolated TODOs via exit 3.
 func TestCLICheckDetectsIsolated(t *testing.T) {
 	tmp := t.TempDir()
 	copyFixtureFile(t, filepath.Join("isolated", "index.ts"), tmp)
@@ -96,8 +96,8 @@ func TestCLICheckDetectsIsolated(t *testing.T) {
 	if code != 3 {
 		t.Fatalf("expected exit 3, got %d\nout:\n%s", code, out)
 	}
-	if !strings.Contains(out, "isolated nodes") {
-		t.Fatalf("expected isolated nodes output, got:\n%s", out)
+	if !strings.Contains(out, "isolated TODOs") {
+		t.Fatalf("expected isolated TODOs output, got:\n%s", out)
 	}
 }
 
@@ -111,14 +111,29 @@ func TestCLIGenerateParsesJSXComments(t *testing.T) {
 
 	got := readFile(t, filepath.Join(tmp, ".comment-graph"))
 	if !strings.Contains(got, "\n  theme-toggle:\n") || !strings.Contains(got, "\n  cta-wireup:\n") {
-		t.Fatalf("expected node ids in output, got:\n%s", got)
+		t.Fatalf("expected TODO ids in output, got:\n%s", got)
 	}
 	if !strings.Contains(got, `from: "theme-toggle"`) || !strings.Contains(got, `to: "cta-wireup"`) {
 		t.Fatalf("expected edge theme-toggle->cta-wireup, got:\n%s", got)
 	}
 }
 
-// Keywords flag removed; no equivalent integration test.
+// Integration: generate should honor custom keywords (NOTE/FIXME) and capture edges.
+func TestCLIGenerateWithCustomKeywords(t *testing.T) {
+	tmp := t.TempDir()
+	copyFixtureFile(t, filepath.Join("custom-keywords", "index.ts"), tmp)
+
+	bin := buildCLI(t)
+	runCmd(t, bin, tmp, "generate", "--keywords", "NOTE,FIXME")
+
+	got := readFile(t, filepath.Join(tmp, ".comment-graph"))
+	if !strings.Contains(got, "note-task:") || !strings.Contains(got, "fix-task:") {
+		t.Fatalf("expected note-task and fix-task in output, got:\n%s", got)
+	}
+	if !strings.Contains(got, `from: "note-task"`) || !strings.Contains(got, `to: "fix-task"`) {
+		t.Fatalf("expected edge note-task->fix-task, got:\n%s", got)
+	}
+}
 
 func readFile(t *testing.T, path string) string {
 	t.Helper()
