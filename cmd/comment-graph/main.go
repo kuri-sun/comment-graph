@@ -20,12 +20,12 @@ func main() {
 	cmd := os.Args[1]
 	switch cmd {
 	case "generate":
-		dir, output, errorsOutput, format, allowErrors, err := parseGenerateFlags(os.Args[2:])
+		dir, output, format, allowErrors, err := parseGenerateFlags(os.Args[2:])
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
-		os.Exit(runGenerate(p, dir, output, errorsOutput, format, allowErrors))
+		os.Exit(runGenerate(p, dir, output, format, allowErrors))
 	case "graph":
 		dir, allowErrors, err := parseGraphFlags(os.Args[2:])
 		if err != nil {
@@ -67,10 +67,9 @@ func currentRoot() (string, error) {
 	return filepath.Abs(root)
 }
 
-func parseGenerateFlags(args []string) (string, string, string, string, bool, error) {
+func parseGenerateFlags(args []string) (string, string, string, bool, error) {
 	dir := ""
 	output := ""
-	errorsOutput := ""
 	format := "yaml"
 	allowErrors := false
 	for i := 0; i < len(args); i++ {
@@ -93,35 +92,26 @@ func parseGenerateFlags(args []string) (string, string, string, string, bool, er
 			}
 			output = args[i+1]
 			i++
-		case "--errors-output":
-			if i+1 >= len(args) {
-				return "", "", "", "", false, fmt.Errorf("missing value for --errors-output")
-			}
-			if errorsOutput != "" {
-				return "", "", "", "", false, fmt.Errorf("duplicate --errors-output flag")
-			}
-			errorsOutput = args[i+1]
-			i++
 		case "--format":
 			if i+1 >= len(args) {
-				return "", "", "", "", false, fmt.Errorf("missing value for --format")
+				return "", "", "", false, fmt.Errorf("missing value for --format")
 			}
 			val := strings.ToLower(args[i+1])
 			if val != "yaml" && val != "json" {
-				return "", "", "", "", false, fmt.Errorf("unsupported format: %s", val)
+				return "", "", "", false, fmt.Errorf("unsupported format: %s", val)
 			}
 			format = val
 			i++
 		case "--allow-errors":
 			if allowErrors {
-				return "", "", "", "", false, fmt.Errorf("duplicate --allow-errors flag")
+				return "", "", "", false, fmt.Errorf("duplicate --allow-errors flag")
 			}
 			allowErrors = true
 		default:
-			return "", "", "", "", false, fmt.Errorf("unknown flag for generate: %s", args[i])
+			return "", "", "", false, fmt.Errorf("unknown flag for generate: %s", args[i])
 		}
 	}
-	return dir, output, errorsOutput, format, allowErrors, nil
+	return dir, output, format, allowErrors, nil
 }
 
 func parseGraphFlags(args []string) (string, bool, error) {
@@ -172,7 +162,6 @@ func printHelp() {
 	fmt.Println("  comment-graph generate  Scan repository and write .comment-graph")
 	fmt.Println("      --dir <path>        Run against a different root (defaults to cwd; useful in scripts)")
 	fmt.Println("      --output <path>     Write .comment-graph to a different path (use '-' for stdout)")
-	fmt.Println("      --errors-output <path> Write validation report JSON to a custom path")
 	fmt.Println("      --format <yaml|json> Output format (default yaml; json writes .comment-graph.json)")
 	fmt.Println("      --allow-errors      Return success even if validation finds issues (report still included)")
 	fmt.Println("  comment-graph graph     Scan repository and stream graph+report JSON to stdout (no files written)")

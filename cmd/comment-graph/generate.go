@@ -8,7 +8,7 @@ import (
 	"github.com/kuri-sun/todo-graph/internal/engine"
 )
 
-func runGenerate(p printer, dir, output, errorsOutput, format string, allowErrors bool) int {
+func runGenerate(p printer, dir, output, format string, allowErrors bool) int {
 	root, err := resolveRoot(dir)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to resolve working directory: %v\n", err)
@@ -44,11 +44,6 @@ func runGenerate(p printer, dir, output, errorsOutput, format string, allowError
 		default:
 			fmt.Fprintf(os.Stderr, "unsupported format: %s\n", format)
 			return 1
-		}
-		if errorsOutput != "" {
-			if err := engine.WriteErrorsJSON(root, errorsOutput, report); err != nil {
-				fmt.Fprintf(os.Stderr, "failed to write errors json: %v\n", err)
-			}
 		}
 		if failed && !allowErrors {
 			return code
@@ -91,11 +86,6 @@ func runGenerate(p printer, dir, output, errorsOutput, format string, allowError
 	target := targetPath(root, output, format)
 	abs, _ := filepath.Abs(target)
 	p.infof("generated : %s", abs)
-	if errorsOutput != "" {
-		if err := engine.WriteErrorsJSON(root, errorsOutput, report); err != nil {
-			fmt.Fprintf(os.Stderr, "failed to write errors json: %v\n", err)
-		}
-	}
 	if failed {
 		return exitCode
 	}
