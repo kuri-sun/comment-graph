@@ -13,17 +13,16 @@
 - `--dir <path>` — run commands against a different repository root.
 - `--help`, `-h` — show usage.
 
-### TODO syntax
+### Comment graph syntax
 
 ```ts
-// TODO: short description
-// @todo-id some-id
-// @todo-deps dep-a, dep-b
+// @cgraph-id: some-id
+// @cgraph-deps: dep-a, dep-b
 ```
 
 Rules:
 
-- TODO must start on a comment line (not inline after code).
-- Metadata must immediately follow the TODO; only `@todo-id` (required) and `@todo-deps` are allowed.
+- Comment metadata must start on a comment line (not inline after code).
+- Metadata must immediately follow the comment line; only `@cgraph-id` (required) and `@cgraph-deps` are allowed.
 - IDs must match the regex `^[a-z0-9_-]+$`.
-- `@todo-deps` is comma-separated;
+- `@cgraph-deps` is comma-separated; spaces are allowed after commas.
