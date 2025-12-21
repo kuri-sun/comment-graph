@@ -1,16 +1,16 @@
-# todo-graph
+# comment-graph
 
 A small CLI that scans your codebase for `TODO` comments, builds a dependency graph.
 
 ## Installation
 
-- Binary download: Download the appropriate archive from the GitHub releases page, unpack, and put todo-graph on your PATH.
-- Go: `go install github.com/kuri-sun/comment-graph/cmd/todo-graph@latest`.
-- Node: `npm install --save-dev todo-graph` or `npx todo-graph`.
+- Binary download: Download the appropriate archive from the GitHub releases page, unpack, and put comment-graph on your PATH.
+- Go: `go install github.com/kuri-sun/comment-graph/cmd/comment-graph@latest`.
+- Node: `npm install --save-dev comment-graph` or `npx comment-graph`.
 
 ## Usage
 
-- [CLI](cmd/todo-graph/README.md)
+- [CLI](cmd/comment-graph/README.md)
 - [Node](npm/README.md)
 
 ## Quick start
@@ -29,7 +29,7 @@ A small CLI that scans your codebase for `TODO` comments, builds a dependency gr
 Then run:
 
 ```
-todo-graph generate   # writes .todo-graph file.
+comment-graph generate   # writes .comment-graph file.
 ```
 
 Will generate a yaml file:

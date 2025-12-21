@@ -37,7 +37,7 @@ func runGenerate(p printer, dir, output, errorsOutput, format string, keywords [
 		case "json":
 			data, err := engine.RenderGraphPayloadJSON(graph, &report)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "failed to render .todo-graph json: %v\n", err)
+				fmt.Fprintf(os.Stderr, "failed to render .comment-graph json: %v\n", err)
 				return 1
 			}
 			fmt.Println(string(data))
@@ -65,13 +65,13 @@ func runGenerate(p printer, dir, output, errorsOutput, format string, keywords [
 	switch format {
 	case "yaml":
 		if err := engine.WriteGraph(root, output, graph); err != nil {
-			fmt.Fprintf(os.Stderr, "failed to write .todo-graph: %v\n", err)
+			fmt.Fprintf(os.Stderr, "failed to write .comment-graph: %v\n", err)
 			p.resultLine(false)
 			return 1
 		}
 	case "json":
 		if err := engine.WriteGraphJSON(root, output, graph, nil); err != nil {
-			fmt.Fprintf(os.Stderr, "failed to write .todo-graph.json: %v\n", err)
+			fmt.Fprintf(os.Stderr, "failed to write .comment-graph.json: %v\n", err)
 			p.resultLine(false)
 			return 1
 		}
@@ -109,9 +109,9 @@ func targetPath(root, output, format string) string {
 		}
 		return filepath.Join(root, output)
 	}
-	filename := ".todo-graph"
+	filename := ".comment-graph"
 	if format == "json" {
-		filename = ".todo-graph.json"
+		filename = ".comment-graph.json"
 	}
 	return filepath.Join(root, filename)
 }

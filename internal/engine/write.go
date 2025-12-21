@@ -21,13 +21,13 @@ func RenderGraphYAML(g graph.Graph) string {
 	return b.String()
 }
 
-// WriteGraph renders the graph to .todo-graph (default) or a custom path.
-// If outputPath is empty, it writes to root/.todo-graph. Relative paths are
+// WriteGraph renders the graph to .comment-graph (default) or a custom path.
+// If outputPath is empty, it writes to root/.comment-graph. Relative paths are
 // resolved against root.
 func WriteGraph(root, outputPath string, g graph.Graph) error {
 	path := outputPath
 	if path == "" {
-		path = filepath.Join(root, ".todo-graph")
+		path = filepath.Join(root, ".comment-graph")
 	} else if !filepath.IsAbs(path) {
 		path = filepath.Join(root, path)
 	}

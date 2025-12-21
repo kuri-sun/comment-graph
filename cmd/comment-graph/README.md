@@ -1,16 +1,16 @@
-# todo-graph CLI
+# comment-graph CLI
 
 ## Usage
 
-- `todo-graph check` — validate TODO references, detect cycles/isolated nodes, and ensure `.todo-graph` matches source.
-- `todo-graph graph` — stream JSON (graph + validation report) to stdout without writing repo files.
-- `todo-graph generate` — scan for TODOs and write `.todo-graph`.
+- `comment-graph check` — validate TODO references, detect cycles/isolated nodes, and ensure `.comment-graph` matches source.
+- `comment-graph graph` — stream JSON (graph + validation report) to stdout without writing repo files.
+- `comment-graph generate` — scan for TODOs and write `.comment-graph`.
 
 ### Flags and behavior
 
 - `--keywords <list>` — comma-separated keywords to scan (default: `TODO,FIXME,NOTE,WARNING,HACK,CHANGED,REVIEW`).
-- `generate --output <path>` — write `.todo-graph` to a custom path.
-- `generate --format <yaml|json>` — choose output format (json writes `.todo-graph.json`).
+- `generate --output <path>` — write `.comment-graph` to a custom path.
+- `generate --format <yaml|json>` — choose output format (json writes `.comment-graph.json`).
 - `generate --allow-errors` — write output even when validation fails (errors included in JSON output).
 - `--dir <path>` — run commands against a different repository root.
 - `--help`, `-h` — show usage.

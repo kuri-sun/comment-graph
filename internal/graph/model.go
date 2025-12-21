@@ -15,7 +15,7 @@ type Edge struct {
 	Type string
 }
 
-// Graph is the in-memory representation of .todo-graph.
+// Graph is the in-memory representation of .comment-graph.
 type Graph struct {
 	Todos map[string]Todo
 	Edges []Edge

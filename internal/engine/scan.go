@@ -75,7 +75,7 @@ func ScanWithKeywords(root string, keywords []string) (graph.Graph, []ScanError,
 		if d.IsDir() {
 			return nil
 		}
-		if d.Name() == ".todo-graph" {
+		if d.Name() == ".comment-graph" {
 			return nil
 		}
 		if d.Type()&fs.ModeSymlink != 0 {

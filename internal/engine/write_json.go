@@ -8,7 +8,7 @@ import (
 	"github.com/kuri-sun/comment-graph/internal/graph"
 )
 
-// RenderGraphJSON renders the graph to JSON in the same shape as .todo-graph.json.
+// RenderGraphJSON renders the graph to JSON in the same shape as .comment-graph.json.
 func RenderGraphJSON(g graph.Graph) ([]byte, error) {
 	payload := map[string]any{
 		"version": 1,
@@ -18,12 +18,12 @@ func RenderGraphJSON(g graph.Graph) ([]byte, error) {
 	return json.MarshalIndent(payload, "", "  ")
 }
 
-// WriteGraphJSON renders the graph to .todo-graph.json in JSON format.
-// If outputPath is empty, it writes to root/.todo-graph.json. Relative paths are resolved against root.
+// WriteGraphJSON renders the graph to .comment-graph.json in JSON format.
+// If outputPath is empty, it writes to root/.comment-graph.json. Relative paths are resolved against root.
 func WriteGraphJSON(root, outputPath string, g graph.Graph, report *CheckReport) error {
 	path := outputPath
 	if path == "" {
-		path = filepath.Join(root, ".todo-graph.json")
+		path = filepath.Join(root, ".comment-graph.json")
 	} else if !filepath.IsAbs(path) {
 		path = filepath.Join(root, path)
 	}
@@ -44,7 +44,7 @@ func WriteGraphJSON(root, outputPath string, g graph.Graph, report *CheckReport)
 }
 
 // RenderGraphPayloadJSON renders a tooling-friendly payload containing the graph and a validation report.
-// This is not the on-disk .todo-graph format; it's intended for editor integrations.
+// This is not the on-disk .comment-graph format; it's intended for editor integrations.
 func RenderGraphPayloadJSON(g graph.Graph, report *CheckReport) ([]byte, error) {
 	payload := map[string]any{
 		"graph": map[string]any{
