@@ -31,8 +31,11 @@ func TestUpdateDepsInsertsLine(t *testing.T) {
 		t.Fatalf("update deps: %v", err)
 	}
 
-	data := mustReadFile(t, path)
-	if !strings.Contains(data, "@todo-deps parent") {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read file: %v", err)
+	}
+	if !strings.Contains(string(data), "@todo-deps parent") {
 		t.Fatalf("expected deps line inserted, got:\n%s", data)
 	}
 }
