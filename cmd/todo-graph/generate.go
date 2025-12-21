@@ -8,14 +8,14 @@ import (
 	"github.com/kuri-sun/todo-graph/internal/engine"
 )
 
-func runGenerate(p printer, dir, output, errorsOutput, format string, keywords []string, allowErrors bool) int {
+func runGenerate(p printer, dir, output, errorsOutput, format string, allowErrors bool) int {
 	root, err := resolveRoot(dir)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to resolve working directory: %v\n", err)
 		return 1
 	}
 
-	graph, errs, err := engine.ScanWithKeywords(root, keywords)
+	graph, errs, err := engine.Scan(root)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "scan failed: %v\n", err)
 		p.resultLine(false)
@@ -37,7 +37,7 @@ func runGenerate(p printer, dir, output, errorsOutput, format string, keywords [
 		case "json":
 			data, err := engine.RenderGraphPayloadJSON(graph, &report, false)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "failed to render .todo-graph json: %v\n", err)
+				fmt.Fprintf(os.Stderr, "failed to render .comment-graph json: %v\n", err)
 				return 1
 			}
 			fmt.Println(string(data))
@@ -65,13 +65,13 @@ func runGenerate(p printer, dir, output, errorsOutput, format string, keywords [
 	switch format {
 	case "yaml":
 		if err := engine.WriteGraph(root, output, graph); err != nil {
-			fmt.Fprintf(os.Stderr, "failed to write .todo-graph: %v\n", err)
+			fmt.Fprintf(os.Stderr, "failed to write .comment-graph: %v\n", err)
 			p.resultLine(false)
 			return 1
 		}
 	case "json":
 		if err := engine.WriteGraphJSON(root, output, graph, nil); err != nil {
-			fmt.Fprintf(os.Stderr, "failed to write .todo-graph.json: %v\n", err)
+			fmt.Fprintf(os.Stderr, "failed to write .comment-graph.json: %v\n", err)
 			p.resultLine(false)
 			return 1
 		}
@@ -109,9 +109,9 @@ func targetPath(root, output, format string) string {
 		}
 		return filepath.Join(root, output)
 	}
-	filename := ".todo-graph"
+	filename := ".comment-graph"
 	if format == "json" {
-		filename = ".todo-graph.json"
+		filename = ".comment-graph.json"
 	}
 	return filepath.Join(root, filename)
 }

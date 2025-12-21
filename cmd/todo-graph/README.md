@@ -1,32 +1,28 @@
-# todo-graph CLI
+# comment-graph CLI
 
 ## Usage
 
-- `todo-graph check` — validate TODO references, detect cycles/isolated nodes, and ensure `.todo-graph` matches source.
-- `todo-graph graph` — stream JSON (graph + validation report) to stdout without writing repo files.
-- `todo-graph generate` — scan for TODOs and write `.todo-graph`.
+- `comment-graph check` — validate comment references, detect cycles/isolated nodes, and ensure `.comment-graph` matches source.
+- `comment-graph graph` — stream JSON (graph + validation report) to stdout without writing repo files.
+- `comment-graph generate` — scan for comment graph nodes and write `.comment-graph`.
 
 ### Flags and behavior
 
-- `--keywords <list>` — comma-separated keywords to scan (default: `TODO,FIXME,NOTE,WARNING,HACK,CHANGED,REVIEW`).
-- `graph --include-non-dependants` — add TODOs with no dependencies to the JSON payload for editor tooling.
-- `generate --output <path>` — write `.todo-graph` to a custom path.
-- `generate --format <yaml|json>` — choose output format (json writes `.todo-graph.json`).
+- `generate --output <path>` — write `.comment-graph` to a custom path.
+- `generate --format <yaml|json>` — choose output format (json writes `.comment-graph.json`).
 - `generate --allow-errors` — write output even when validation fails (errors included in JSON output).
 - `--dir <path>` — run commands against a different repository root.
 - `--help`, `-h` — show usage.
 
-### TODO syntax
+### Comment graph syntax
 
 ```ts
-// TODO: short description
-// @todo-id some-id
-// @todo-deps dep-a, dep-b
+// @cgraph-id: some-id
+// @cgraph-deps: dep-a, dep-b
 ```
 
 Rules:
 
-- TODO must start on a comment line (not inline after code).
-- Metadata must immediately follow the TODO; only `@todo-id` (required) and `@todo-deps` are allowed.
+- Metadata must be adjacent in the same comment block as the `@cgraph-id`.
 - IDs must match the regex `^[a-z0-9_-]+$`.
-- `@todo-deps` is comma-separated;
+- `@cgraph-deps` is comma-separated;

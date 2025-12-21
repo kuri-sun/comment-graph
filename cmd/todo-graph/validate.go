@@ -38,7 +38,7 @@ func validateAndReport(p printer, header string, scanned graph.Graph, report eng
 			fmt.Fprintf(os.Stderr, "  - %s:%d: %s\n", e.File, e.Line, e.Msg)
 		}
 		fmt.Fprintln(os.Stderr)
-		p.warnLine("Fix scan issues and re-run `todo-graph check`.")
+		p.warnLine("Fix scan issues and re-run `comment-graph check`.")
 		fmt.Fprintln(os.Stderr)
 		return 3, true
 	}
