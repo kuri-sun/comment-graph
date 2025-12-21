@@ -141,8 +141,8 @@ func absPath(t *testing.T, p string) string {
 func buildCLI(t *testing.T) string {
 	t.Helper()
 	root := findModuleRoot(t)
-	bin := filepath.Join(t.TempDir(), "todo-graph")
-	cmd := exec.Command("go", "build", "-o", bin, "./cmd/todo-graph")
+	bin := filepath.Join(t.TempDir(), "comment-graph")
+	cmd := exec.Command("go", "build", "-o", bin, "./cmd/comment-graph")
 	cmd.Dir = root
 	cmd.Env = append(os.Environ(), "GOCACHE="+t.TempDir())
 	out, err := cmd.CombinedOutput()
