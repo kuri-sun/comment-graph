@@ -1,5 +1,5 @@
-// @cgraph-id: cleanup-sample
-// @cgraph-deps: cache-sample
+// @cgraph-id cleanup-sample
+// @cgraph-deps cache-sample
 
 import { getUser } from "./users"
 

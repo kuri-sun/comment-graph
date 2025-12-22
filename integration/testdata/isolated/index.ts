@@ -1,4 +1,4 @@
-// @cgraph-id: lonely
+// @cgraph-id lonely
 
 export function noop() {
   return "noop"

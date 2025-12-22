@@ -1,10 +1,10 @@
 // TODO: entrypoint
-// @cgraph-id: js-root
+// @cgraph-id js-root
 
 function start() {
   // TODO: worker
-  // @cgraph-id: js-worker
+  // @cgraph-id js-worker
   /* TODO: helper
-  @cgraph-id: js-helper
-  @cgraph-deps: js-root */
+  @cgraph-id js-helper
+  @cgraph-deps js-root */
 }

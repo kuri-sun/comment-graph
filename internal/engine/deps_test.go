@@ -12,7 +12,7 @@ import (
 func TestUpdateDepsInsertsLine(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "file.go")
-	content := `// @cgraph-id: child
+	content := `// @cgraph-id child
 // some comment
 `
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
@@ -42,9 +42,9 @@ func TestUpdateDepsInsertsLine(t *testing.T) {
 func TestUpdateDepsRejectsMultipleDepsLines(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "file.go")
-	content := `// @cgraph-id: child
-// @cgraph-deps: a
-// @cgraph-deps: b
+	content := `// @cgraph-id child
+// @cgraph-deps a
+// @cgraph-deps b
 `
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		t.Fatalf("write: %v", err)

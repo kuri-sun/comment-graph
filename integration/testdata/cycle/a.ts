@@ -1,5 +1,5 @@
-// @cgraph-id: a
-// @cgraph-deps: b
+// @cgraph-id a
+// @cgraph-deps b
 
 import { persist } from "./b"
 

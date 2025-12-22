@@ -9,10 +9,10 @@ import (
 
 func TestScanParsesNodesWithDeps(t *testing.T) {
 	dir := t.TempDir()
-	writeFile(t, dir, "a.go", `// @cgraph-id: a
-// @cgraph-deps: b, c
+	writeFile(t, dir, "a.go", `// @cgraph-id a
+// @cgraph-deps b, c
 // some comment
-// @cgraph-id: b
+// @cgraph-id b
 `)
 
 	g, errs, err := Scan(dir)
@@ -43,10 +43,10 @@ func TestScanParsesNodesWithDeps(t *testing.T) {
 
 func TestMetadataStopsAtNonComment(t *testing.T) {
 	dir := t.TempDir()
-	writeFile(t, dir, "a.go", `// @cgraph-id: a
-// @cgraph-deps: b
+	writeFile(t, dir, "a.go", `// @cgraph-id a
+// @cgraph-deps b
 const x = 1
-// @cgraph-deps: c
+// @cgraph-deps c
 `)
 
 	g, errs, err := Scan(dir)
@@ -63,7 +63,7 @@ const x = 1
 
 func TestMissingIdErrors(t *testing.T) {
 	dir := t.TempDir()
-	writeFile(t, dir, "a.go", `// @cgraph-deps: a
+	writeFile(t, dir, "a.go", `// @cgraph-deps a
 `)
 
 	g, errs, err := Scan(dir)
@@ -80,7 +80,7 @@ func TestMissingIdErrors(t *testing.T) {
 
 func TestInvalidIdErrors(t *testing.T) {
 	dir := t.TempDir()
-	writeFile(t, dir, "a.go", `// @cgraph-id: BadID
+	writeFile(t, dir, "a.go", `// @cgraph-id BadID
 `)
 
 	_, errs, err := Scan(dir)
@@ -94,9 +94,9 @@ func TestInvalidIdErrors(t *testing.T) {
 
 func TestDuplicateIds(t *testing.T) {
 	dir := t.TempDir()
-	writeFile(t, dir, "a.go", `// @cgraph-id: dup
+	writeFile(t, dir, "a.go", `// @cgraph-id dup
 `)
-	writeFile(t, dir, filepath.Join("sub", "b.go"), `// @cgraph-id: dup
+	writeFile(t, dir, filepath.Join("sub", "b.go"), `// @cgraph-id dup
 `)
 
 	_, errs, err := Scan(dir)
@@ -110,7 +110,7 @@ func TestDuplicateIds(t *testing.T) {
 
 func TestUnknownMetadataErrors(t *testing.T) {
 	dir := t.TempDir()
-	writeFile(t, dir, "a.go", `// @cgraph-id: a
+	writeFile(t, dir, "a.go", `// @cgraph-id a
 // @owner alice
 `)
 
@@ -125,8 +125,8 @@ func TestUnknownMetadataErrors(t *testing.T) {
 
 func TestSpaceSeparatedDepsError(t *testing.T) {
 	dir := t.TempDir()
-	writeFile(t, dir, "a.go", `// @cgraph-id: a
-// @cgraph-deps: b c
+	writeFile(t, dir, "a.go", `// @cgraph-id a
+// @cgraph-deps b c
 `)
 
 	_, errs, err := Scan(dir)
@@ -141,11 +141,11 @@ func TestSpaceSeparatedDepsError(t *testing.T) {
 func TestBlockComments(t *testing.T) {
 	dir := t.TempDir()
 	writeFile(t, dir, "a.js", `/*
-@cgraph-id: a
-@cgraph-deps: b
+@cgraph-id a
+@cgraph-deps b
 */
 /* 
-@cgraph-id: b
+@cgraph-id b
 */
 `)
 

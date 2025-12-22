@@ -1,9 +1,9 @@
-// @cgraph-id: db-sample
+// @cgraph-id db-sample
 
 const cache: Record<string, User> = {}
 
-// @cgraph-id: cache-sample
-// @cgraph-deps: db-sample
+// @cgraph-id cache-sample
+// @cgraph-deps db-sample
 export async function getUser(id: string): Promise<User> {
   const cached = cache[id]
   if (cached) return cached
