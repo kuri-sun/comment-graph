@@ -2,13 +2,13 @@
 
 ## Usage
 
-- `comment-graph check` — validate references, detect cycles/isolated nodes, and ensure `.comment-graph` matches source.
+- `comment-graph check` — validate references, detect cycles/isolated nodes, and ensure `comment-graph.yml` matches source.
 - `comment-graph graph` — stream JSON (graph + validation report) to stdout without writing repo files.
-- `comment-graph generate` — scan for comment graph nodes and write `.comment-graph`.
+- `comment-graph generate` — scan for comment graph nodes and write `comment-graph.yml`.
 
 ### Flags and behavior
 
-- `generate --format <yaml|json>` — choose output format (json writes `.comment-graph.json`).
+- `generate --format <yaml|json>` — choose output format (json writes `comment-graph.json`).
 - `generate --allow-errors` — write output even when validation fails (errors included in JSON output).
 - `--dir <path>` — run commands against a different repository root.
 - `--help`, `-h` — show usage.

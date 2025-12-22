@@ -17,7 +17,7 @@ func TestCLIGenerateWritesTodoGraph(t *testing.T) {
 	bin := buildCLI(t)
 	runCmd(t, bin, tmp, "generate")
 
-	got := readFile(t, filepath.Join(tmp, ".comment-graph"))
+	got := readFile(t, filepath.Join(tmp, "comment-graph.yml"))
 	if !strings.Contains(got, "\n  cache-sample:\n") || !strings.Contains(got, "\n  db-sample:\n") || !strings.Contains(got, "\n  cleanup-sample:\n") {
 		t.Fatalf("unexpected todos section:\n%s", got)
 	}
@@ -60,7 +60,7 @@ func TestCLICheckDetectsCycle(t *testing.T) {
 	}
 }
 
-// Integration: `check` should ignore .comment-graph drift and rely on source scan only.
+// Integration: `check` should ignore comment-graph.yml drift and rely on source scan only.
 func TestCLICheckIgnoresDrift(t *testing.T) {
 	tmp := t.TempDir()
 	copyFixtureFile(t, filepath.Join("sample", "index.ts"), tmp)
@@ -69,19 +69,19 @@ func TestCLICheckIgnoresDrift(t *testing.T) {
 	bin := buildCLI(t)
 	runCmd(t, bin, tmp, "generate")
 
-	// mutate .comment-graph to introduce drift
-	path := filepath.Join(tmp, ".comment-graph")
+	// mutate comment-graph.yml to introduce drift
+	path := filepath.Join(tmp, "comment-graph.yml")
 	contents := readFile(t, path)
 	contents = strings.Replace(contents, "cleanup-sample", "cleanup-sample-changed", 1)
 	if err := os.WriteFile(path, []byte(contents), 0o644); err != nil {
-		t.Fatalf("mutate .comment-graph: %v", err)
+		t.Fatalf("mutate comment-graph.yml: %v", err)
 	}
 
 	code, out := runCmdExpectExit(t, bin, tmp, 0, "check")
 	if code != 0 {
 		t.Fatalf("expected exit 0, got %d\nout:\n%s", code, out)
 	}
-	if strings.Contains(out, ".comment-graph is out of date") {
+	if strings.Contains(out, "comment-graph.yml is out of date") {
 		t.Fatalf("did not expect drift output, got:\n%s", out)
 	}
 }
@@ -109,7 +109,7 @@ func TestCLIGenerateParsesJSXComments(t *testing.T) {
 	bin := buildCLI(t)
 	runCmd(t, bin, tmp, "generate")
 
-	got := readFile(t, filepath.Join(tmp, ".comment-graph"))
+	got := readFile(t, filepath.Join(tmp, "comment-graph.yml"))
 	if !strings.Contains(got, "\n  theme-toggle:\n") || !strings.Contains(got, "\n  cta-wireup:\n") {
 		t.Fatalf("expected TODO ids in output, got:\n%s", got)
 	}

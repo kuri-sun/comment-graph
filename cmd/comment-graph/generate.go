@@ -33,13 +33,13 @@ func runGenerate(p printer, dir, format string, allowErrors bool) int {
 	switch format {
 	case "yaml":
 		if err := engine.WriteGraph(root, "", graph); err != nil {
-			fmt.Fprintf(os.Stderr, "failed to write .comment-graph: %v\n", err)
+			fmt.Fprintf(os.Stderr, "failed to write comment-graph.yml: %v\n", err)
 			p.resultLine(false)
 			return 1
 		}
 	case "json":
 		if err := engine.WriteGraphJSON(root, "", graph, nil); err != nil {
-			fmt.Fprintf(os.Stderr, "failed to write .comment-graph.json: %v\n", err)
+			fmt.Fprintf(os.Stderr, "failed to write comment-graph.json: %v\n", err)
 			p.resultLine(false)
 			return 1
 		}
@@ -56,9 +56,9 @@ func runGenerate(p printer, dir, format string, allowErrors bool) int {
 	if failed && allowErrors {
 		p.warnLine("validation failed; output written due to --allow-errors")
 	}
-	filename := ".comment-graph"
+	filename := "comment-graph.yml"
 	if format == "json" {
-		filename = ".comment-graph.json"
+		filename = "comment-graph.json"
 	}
 	target := filepath.Join(root, filename)
 	abs, _ := filepath.Abs(target)

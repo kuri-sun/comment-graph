@@ -9,7 +9,7 @@ import (
 	"github.com/kuri-sun/comment-graph/internal/graph"
 )
 
-// First write/read test: round-trip a simple graph through .comment-graph.
+// First write/read test: round-trip a simple graph through comment-graph.yml.
 func TestWriteReadGraphRoundTrip(t *testing.T) {
 	dir := t.TempDir()
 	g := graph.Graph{
@@ -25,8 +25,8 @@ func TestWriteReadGraphRoundTrip(t *testing.T) {
 	if err := WriteGraph(dir, "", g); err != nil {
 		t.Fatalf("write graph: %v", err)
 	}
-	if _, err := os.Stat(filepath.Join(dir, ".comment-graph")); err != nil {
-		t.Fatalf(".comment-graph not written: %v", err)
+	if _, err := os.Stat(filepath.Join(dir, "comment-graph.yml")); err != nil {
+		t.Fatalf("comment-graph.yml not written: %v", err)
 	}
 
 	read, err := ReadGraph(dir)
@@ -48,7 +48,7 @@ func TestWriteGraphEmptyFormatsSections(t *testing.T) {
 	if err := WriteGraph(dir, "", g); err != nil {
 		t.Fatalf("write graph: %v", err)
 	}
-	data, err := os.ReadFile(filepath.Join(dir, ".comment-graph"))
+	data, err := os.ReadFile(filepath.Join(dir, "comment-graph.yml"))
 	if err != nil {
 		t.Fatalf("read file: %v", err)
 	}
@@ -63,7 +63,7 @@ func TestWriteGraphEmptyFormatsSections(t *testing.T) {
 
 func TestWriteGraphCustomPath(t *testing.T) {
 	dir := t.TempDir()
-	output := filepath.Join(dir, "artifacts", "custom.comment-graph")
+	output := filepath.Join(dir, "artifacts", "custom.comment-graph.yml")
 
 	g := graph.Graph{
 		Nodes: map[string]graph.Node{
@@ -82,10 +82,10 @@ func TestWriteGraphCustomPath(t *testing.T) {
 	if !strings.Contains(content, "custom:") {
 		t.Fatalf("expected content to contain todo id, got: %s", content)
 	}
-	if _, err := os.Stat(filepath.Join(dir, ".comment-graph")); err == nil {
-		t.Fatalf("default .comment-graph should not be written when output path is provided")
+	if _, err := os.Stat(filepath.Join(dir, "comment-graph.yml")); err == nil {
+		t.Fatalf("default comment-graph.yml should not be written when output path is provided")
 	} else if !os.IsNotExist(err) {
-		t.Fatalf("stat default .comment-graph: %v", err)
+		t.Fatalf("stat default comment-graph.yml: %v", err)
 	}
 }
 

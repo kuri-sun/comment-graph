@@ -28,7 +28,8 @@ A small CLI that scans your codebase for comment metadata and builds a dependenc
 Then run:
 
 ```
-comment-graph generate   # writes .comment-graph file.
+ comment-graph generate   # writes comment-graph.yml
+ comment-graph generate --format json   # writes comment-graph.json instead of YAML
 ```
 
 Will generate a yaml file:

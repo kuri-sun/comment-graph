@@ -7,11 +7,11 @@ import (
 )
 
 // WriteErrorsJSON writes the validation report to a JSON file.
-// If outputPath is empty, it writes to root/.comment-graph.errors.json. Relative paths are resolved against root.
+// If outputPath is empty, it writes to root/comment-graph.errors.json. Relative paths are resolved against root.
 func WriteErrorsJSON(root, outputPath string, report CheckReport) error {
 	path := outputPath
 	if path == "" {
-		path = filepath.Join(root, ".comment-graph.errors.json")
+		path = filepath.Join(root, "comment-graph.errors.json")
 	} else if !filepath.IsAbs(path) {
 		path = filepath.Join(root, path)
 	}

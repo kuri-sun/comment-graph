@@ -19,7 +19,7 @@ func TestWriteErrorsJSON(t *testing.T) {
 	if err := WriteErrorsJSON(dir, "", report); err != nil {
 		t.Fatalf("write errors: %v", err)
 	}
-	path := filepath.Join(dir, ".comment-graph.errors.json")
+	path := filepath.Join(dir, "comment-graph.errors.json")
 	data, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatalf("read errors: %v", err)

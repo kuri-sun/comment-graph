@@ -16,7 +16,7 @@ type Edge struct {
 	Type string
 }
 
-// Graph is the in-memory representation of .comment-graph.
+// Graph is the in-memory representation of comment-graph.yml.
 type Graph struct {
 	Nodes map[string]Node
 	Edges []Edge

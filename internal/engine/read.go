@@ -10,9 +10,9 @@ import (
 	"github.com/kuri-sun/comment-graph/internal/graph"
 )
 
-// ReadGraph parses the .comment-graph file from the repository root.
+// ReadGraph parses the comment-graph.yml file from the repository root.
 func ReadGraph(root string) (graph.Graph, error) {
-	path := filepath.Join(root, ".comment-graph")
+	path := filepath.Join(root, "comment-graph.yml")
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return graph.Graph{}, err
@@ -74,7 +74,7 @@ func ReadGraph(root string) (graph.Graph, error) {
 				lineVal := strings.TrimSpace(strings.TrimPrefix(line, "line:"))
 				n, err := strconv.Atoi(lineVal)
 				if err != nil {
-					return graph.Graph{}, fmt.Errorf(".comment-graph:%d: invalid line number %q", i+1, lineVal)
+					return graph.Graph{}, fmt.Errorf("comment-graph.yml:%d: invalid line number %q", i+1, lineVal)
 				}
 				node := g.Nodes[currentID]
 				node.ID = currentID

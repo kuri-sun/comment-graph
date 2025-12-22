@@ -82,7 +82,7 @@ func validateAndReport(p printer, header string, scanned graph.Graph, report eng
 
 	if checkDrift && fileGraph != nil && !engine.GraphsEqual(scanned, *fileGraph) {
 		ensureHeader(&headerPrinted)
-		fmt.Fprintln(os.Stderr, "  - .comment-graph is out of date (run comment-graph generate)")
+		fmt.Fprintln(os.Stderr, "  - comment-graph.yml is out of date (run comment-graph generate)")
 		mismatch = true
 	}
 

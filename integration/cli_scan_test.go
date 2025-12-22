@@ -17,7 +17,7 @@ func TestCLIGenerateWritesTodoGraph(t *testing.T) {
 	bin := buildCLI(t)
 	runCmd(t, bin, tmp, "generate")
 
-	got := readFile(t, filepath.Join(tmp, ".comment-graph"))
+	got := readFile(t, filepath.Join(tmp, "comment-graph.yml"))
 	if !strings.Contains(got, "\n  cache-sample:\n") || !strings.Contains(got, "\n  db-sample:\n") || !strings.Contains(got, "\n  cleanup-sample:\n") {
 		t.Fatalf("unexpected todos section:\n%s", got)
 	}
@@ -60,7 +60,7 @@ func TestCLICheckDetectsCycle(t *testing.T) {
 	}
 }
 
-// Integration: `check` should ignore .comment-graph drift and rely on source scan only.
+// Integration: `check` should ignore comment-graph.yml drift and rely on source scan only.
 func TestCLICheckIgnoresDrift(t *testing.T) {
 	tmp := t.TempDir()
 	copyFixtureFile(t, filepath.Join("sample", "index.ts"), tmp)
@@ -69,19 +69,19 @@ func TestCLICheckIgnoresDrift(t *testing.T) {
 	bin := buildCLI(t)
 	runCmd(t, bin, tmp, "generate")
 
-	// mutate .comment-graph to introduce drift
-	path := filepath.Join(tmp, ".comment-graph")
+	// mutate comment-graph.yml to introduce drift
+	path := filepath.Join(tmp, "comment-graph.yml")
 	contents := readFile(t, path)
 	contents = strings.Replace(contents, "cleanup-sample", "cleanup-sample-changed", 1)
 	if err := os.WriteFile(path, []byte(contents), 0o644); err != nil {
-		t.Fatalf("mutate .comment-graph: %v", err)
+		t.Fatalf("mutate comment-graph.yml: %v", err)
 	}
 
 	code, out := runCmdExpectExit(t, bin, tmp, 0, "check")
 	if code != 0 {
 		t.Fatalf("expected exit 0, got %d\nout:\n%s", code, out)
 	}
-	if strings.Contains(out, ".comment-graph is out of date") {
+	if strings.Contains(out, "comment-graph.yml is out of date") {
 		t.Fatalf("did not expect drift output, got:\n%s", out)
 	}
 }
@@ -118,7 +118,7 @@ func TestCLIVersionCommand(t *testing.T) {
 	}
 }
 
-// Integration: check should surface scan/undefined errors even without .comment-graph.
+// Integration: check should surface scan/undefined errors even without comment-graph.yml.
 func TestCLICheckReportsScanErrorsWithoutGraph(t *testing.T) {
 	tmp := t.TempDir()
 	copyFixtureFile(t, filepath.Join("undefined", "index.ts"), tmp)
@@ -131,8 +131,8 @@ func TestCLICheckReportsScanErrorsWithoutGraph(t *testing.T) {
 	if !strings.Contains(out, "missing \"missing-id\"") {
 		t.Fatalf("expected missing id error, got:\n%s", out)
 	}
-	if strings.Contains(out, "failed to read .comment-graph") {
-		t.Fatalf("expected scan error before .comment-graph read, got:\n%s", out)
+	if strings.Contains(out, "failed to read comment-graph.yml") {
+		t.Fatalf("expected scan error before comment-graph.yml read, got:\n%s", out)
 	}
 }
 
@@ -147,7 +147,7 @@ func TestCLIDirFlagTargetsRoot(t *testing.T) {
 
 	runCmd(t, bin, otherDir, "generate", "--dir", tmp)
 
-	got := readFile(t, filepath.Join(tmp, ".comment-graph"))
+	got := readFile(t, filepath.Join(tmp, "comment-graph.yml"))
 	if !strings.Contains(got, "\n  cache-sample:\n") || !strings.Contains(got, "\n  db-sample:\n") || !strings.Contains(got, "\n  cleanup-sample:\n") {
 		t.Fatalf("unexpected todos section:\n%s", got)
 	}
@@ -158,7 +158,7 @@ func TestCLIDirFlagTargetsRoot(t *testing.T) {
 	}
 }
 
-// Integration: generate should support writing .comment-graph to a custom path.
+// Integration: generate should support writing comment-graph.yml to a custom path.
 func TestCLIGenerateSupportsOutputFlag(t *testing.T) {
 	tmp := t.TempDir()
 	copyFixtureFile(t, filepath.Join("sample", "index.ts"), tmp)
@@ -167,7 +167,7 @@ func TestCLIGenerateSupportsOutputFlag(t *testing.T) {
 	bin := buildCLI(t)
 	runCmd(t, bin, tmp, "generate")
 
-	got := readFile(t, filepath.Join(tmp, ".comment-graph"))
+	got := readFile(t, filepath.Join(tmp, "comment-graph.yml"))
 	if !strings.Contains(got, "\n  cache-sample:\n") || !strings.Contains(got, "\n  db-sample:\n") {
 		t.Fatalf("unexpected todos section:\n%s", got)
 	}

@@ -47,7 +47,7 @@ Run it with `npm run comment-graph:check` (or `yarn`/`pnpm`).
 Then run:
 
 ```
-comment-graph generate   # writes .comment-graph file.
+ comment-graph generate   # writes comment-graph.yml
 ```
 
 Will generate a yaml file:

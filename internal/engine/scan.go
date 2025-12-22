@@ -42,7 +42,7 @@ func Scan(root string) (graph.Graph, []ScanError, error) {
 		if d.IsDir() {
 			return nil
 		}
-		if d.Name() == ".comment-graph" {
+		if d.Name() == ".comment-graph" || d.Name() == "comment-graph.yml" || d.Name() == "comment-graph.json" {
 			return nil
 		}
 		if d.Type()&fs.ModeSymlink != 0 {

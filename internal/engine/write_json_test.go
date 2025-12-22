@@ -23,7 +23,7 @@ func TestWriteGraphJSON(t *testing.T) {
 	if err := WriteGraphJSON(dir, "", g, nil); err != nil {
 		t.Fatalf("write json: %v", err)
 	}
-	path := filepath.Join(dir, ".comment-graph.json")
+	path := filepath.Join(dir, "comment-graph.json")
 	data, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatalf("read json: %v", err)
