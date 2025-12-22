@@ -214,7 +214,6 @@ func scanFile(path, rel string) ([]graph.Edge, []graph.Node, []ScanError, error)
 			}
 			current.hasMeta = true
 			val := strings.TrimSpace(strings.TrimPrefix(cleaned, "@cgraph-id"))
-			val = strings.TrimPrefix(val, ":")
 			val = strings.TrimSpace(cleanCommentSuffix(val))
 			if val == "" {
 				errs = append(errs, ScanError{File: rel, Line: i + 1, Msg: "@cgraph-id must not be empty"})
@@ -238,7 +237,6 @@ func scanFile(path, rel string) ([]graph.Edge, []graph.Node, []ScanError, error)
 			}
 			current.hasMeta = true
 			raw := strings.TrimSpace(strings.TrimPrefix(cleaned, "@cgraph-deps"))
-			raw = strings.TrimPrefix(raw, ":")
 			raw = strings.TrimSpace(cleanCommentSuffix(raw))
 			ids, idErrs := parseIDs(raw, i+1, rel)
 			errs = append(errs, idErrs...)
