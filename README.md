@@ -18,6 +18,7 @@ A small CLI that scans your codebase for comment metadata and builds a dependenc
 ```ts
 // user.ts
 // @cgraph-id db-migration
+// @cgraph-label Database migration
 
 // cache.ts
 // @cgraph-id cache-user
@@ -39,6 +40,7 @@ nodes:
   db-migration:
     file: backend/db/migrate.go
     line: 12
+    label: "Database migration"
 
   cache-user:
     file: backend/cache/user.go

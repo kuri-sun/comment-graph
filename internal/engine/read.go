@@ -82,6 +82,17 @@ func ReadGraph(root string) (graph.Graph, error) {
 				g.Nodes[currentID] = node
 				continue
 			}
+			if strings.HasPrefix(line, "label:") {
+				val := strings.TrimSpace(strings.TrimPrefix(line, "label:"))
+				if unquoted, err := strconv.Unquote(val); err == nil {
+					val = unquoted
+				}
+				node := g.Nodes[currentID]
+				node.ID = currentID
+				node.Label = val
+				g.Nodes[currentID] = node
+				continue
+			}
 		case "edges":
 			if line == "[]" {
 				continue

@@ -40,6 +40,7 @@ Run it with `npm run comment-graph:check` (or `yarn`/`pnpm`).
 
 // cache.ts
 // @cgraph-id cache-user
+// @cgraph-label Cache user reads
 // @cgraph-deps db-migration
 ```
 
@@ -72,6 +73,6 @@ edges:
 ### Rules:
 
 - Comment metadata must start on a comment line (not inline after code).
-- Metadata must immediately follow the comment (no blank/non-comment lines); only `@cgraph-id` (required) and `@cgraph-deps` are allowed.
+- Metadata must immediately follow the comment (no blank/non-comment lines); only `@cgraph-id` (required), `@cgraph-label` (optional), and `@cgraph-deps` are allowed.
 - IDs must use lowercase letters/digits/hyphens/underscores. Missing `@cgraph-id` is an error.
 - `@cgraph-deps` is comma-separated; spaces after commas are allowed.

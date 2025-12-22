@@ -2,9 +2,10 @@ package graph
 
 // Node represents a comment-graph node discovered in source code.
 type Node struct {
-	ID   string
-	File string
-	Line int
+	ID    string
+	File  string
+	Line  int
+	Label string
 }
 
 // Edge models a dependency edge between nodes.

@@ -60,7 +60,11 @@ func writeNodes(b *strings.Builder, nodes map[string]graph.Node) {
 		n := nodes[id]
 		b.WriteString("  " + id + ":\n")
 		b.WriteString("    file: " + yamlQuote(n.File) + "\n")
-		b.WriteString("    line: " + strconv.Itoa(n.Line) + "\n\n")
+		b.WriteString("    line: " + strconv.Itoa(n.Line) + "\n")
+		if n.Label != "" {
+			b.WriteString("    label: " + yamlQuote(n.Label) + "\n")
+		}
+		b.WriteString("\n")
 	}
 }
 

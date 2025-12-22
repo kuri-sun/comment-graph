@@ -17,12 +17,13 @@
 
 ```ts
 // @cgraph-id some-id
+// @cgraph-label Optional human label
 // @cgraph-deps dep-a, dep-b
 ```
 
 Rules:
 
 - Comment metadata must start on a comment line (not inline after code).
-- Metadata must immediately follow the comment line; only `@cgraph-id` (required) and `@cgraph-deps` are allowed.
+- Metadata must immediately follow the comment line; only `@cgraph-id` (required), `@cgraph-label` (optional), and `@cgraph-deps` are allowed.
 - IDs must match the regex `^[a-z0-9_-]+$`.
 - `@cgraph-deps` is comma-separated; spaces are allowed after commas.

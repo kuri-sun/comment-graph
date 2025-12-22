@@ -114,6 +114,7 @@ func scanFile(path, rel string) ([]graph.Edge, []graph.Node, []ScanError, error)
 		line    int
 		id      string
 		deps    []string
+		label   string
 		invalid bool
 		hasMeta bool
 	}
@@ -134,7 +135,7 @@ func scanFile(path, rel string) ([]graph.Edge, []graph.Node, []ScanError, error)
 			current = nil
 			return
 		}
-		nodes[current.id] = graph.Node{ID: current.id, File: rel, Line: current.line}
+		nodes[current.id] = graph.Node{ID: current.id, File: rel, Line: current.line, Label: current.label}
 		for _, dep := range current.deps {
 			edges = append(edges, graph.Edge{From: dep, To: current.id, Type: "blocks"})
 		}
@@ -241,6 +242,14 @@ func scanFile(path, rel string) ([]graph.Edge, []graph.Node, []ScanError, error)
 			ids, idErrs := parseIDs(raw, i+1, rel)
 			errs = append(errs, idErrs...)
 			current.deps = append(current.deps, ids...)
+		case strings.HasPrefix(lower, "@cgraph-label"):
+			if current == nil {
+				current = &pending{line: i + 1}
+			}
+			current.hasMeta = true
+			val := strings.TrimSpace(strings.TrimPrefix(cleaned, "@cgraph-label"))
+			val = strings.TrimSpace(cleanCommentSuffix(val))
+			current.label = val
 		case strings.HasPrefix(lower, "@"):
 			errs = append(errs, ScanError{File: rel, Line: i + 1, Msg: "unknown metadata (use @cgraph-id or @cgraph-deps)"})
 		default:
