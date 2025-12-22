@@ -16,8 +16,8 @@
 ### Comment graph syntax
 
 ```ts
-// @cgraph-id: some-id
-// @cgraph-deps: dep-a, dep-b
+// @cgraph-id some-id
+// @cgraph-deps dep-a, dep-b
 ```
 
 Rules:

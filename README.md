@@ -17,11 +17,11 @@ A small CLI that scans your codebase for comment metadata and builds a dependenc
 
 ```ts
 // user.ts
-// @cgraph-id: db-migration
+// @cgraph-id db-migration
 
 // cache.ts
-// @cgraph-id: cache-user
-// @cgraph-deps: db-migration
+// @cgraph-id cache-user
+// @cgraph-deps db-migration
 ```
 
 Then run:

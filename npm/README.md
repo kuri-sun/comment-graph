@@ -36,11 +36,11 @@ Run it with `npm run comment-graph:check` (or `yarn`/`pnpm`).
 
 ```ts
 // user.ts
-// @cgraph-id: db-migration
+// @cgraph-id db-migration
 
 // cache.ts
-// @cgraph-id: cache-user
-// @cgraph-deps: db-migration
+// @cgraph-id cache-user
+// @cgraph-deps db-migration
 ```
 
 Then run:
