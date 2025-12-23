@@ -58,4 +58,4 @@ edges:
 
 ## Integration
 
-Nvim plugin [comment-graph.nvim](../comment-graph.nvim) lets you browse graphs via a tree/preview UI without writing repo files.
+Nvim plugin: [comment-graph.nvim](../comment-graph.nvim) lets you browse graphs via a tree/preview UI.
