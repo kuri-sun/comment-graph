@@ -38,6 +38,10 @@ Then run:
 
 Will generate a yaml file:
 
+## Neovim integration
+
+Want an in-editor view? The companion plugin [comment-graph.nvim](../comment-graph.nvim) lets you browse graphs via a tree/preview UI without writing repo files.
+
 ```yaml
 version: 1
 
