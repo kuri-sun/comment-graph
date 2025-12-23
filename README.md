@@ -1,5 +1,9 @@
 # comment-graph
 
+[![Go Version](https://img.shields.io/badge/go-1.25-blue)](https://go.dev/)
+[![npm](https://img.shields.io/npm/v/comment-graph)](https://www.npmjs.com/package/comment-graph)
+[![CI](https://github.com/kuri-sun/comment-graph/actions/workflows/ci.yml/badge.svg)](https://github.com/kuri-sun/comment-graph/actions/workflows/ci.yml)
+
 A small CLI that scans your codebase for comment metadata and builds a dependency graph.
 
 ## Installation
