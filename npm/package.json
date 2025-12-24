@@ -1,6 +1,6 @@
 {
   "name": "comment-graph",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "CLI wrapper for comment-graph with binary downloader",
   "bin": {
     "comment-graph": "./bin/comment-graph.js"
