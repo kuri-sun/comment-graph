@@ -5,6 +5,9 @@
   "bin": {
     "comment-graph": "./bin/comment-graph.js"
   },
+  "scripts": {
+    "build": "GOCACHE=$PWD/.gocache GOMODCACHE=$PWD/.gomodcache GOOS=js GOARCH=wasm go build -o npm/wasm/comment-graph.wasm ./cmd/comment-graph && cp $(go env GOROOT)/lib/wasm/wasm_exec.js npm/wasm/"
+  },
   "files": [
     "bin",
     "wasm"
