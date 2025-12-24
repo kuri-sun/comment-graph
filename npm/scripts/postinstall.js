@@ -80,18 +80,28 @@ function mapArch(a) {
   }
 }
 
-async function download(url, dest) {
+async function download(url, dest, redirects = 0) {
+  if (redirects > 5) {
+    throw new Error("too many redirects while downloading");
+  }
   const write = createWriteStream(dest);
   await new Promise((resolve, reject) => {
-    https
-      .get(url, (res) => {
-        if (res.statusCode !== 200) {
-          reject(new Error(`download failed: ${res.statusCode}`));
-          return;
-        }
-        pipe(res, write).then(resolve).catch(reject);
-      })
-      .on("error", reject);
+    const req = https.get(url, (res) => {
+      // Follow redirects (GitHub releases respond with 302 to asset CDN).
+      if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+        res.destroy();
+        const next = new URL(res.headers.location, url).toString();
+        download(next, dest, redirects + 1).then(resolve).catch(reject);
+        return;
+      }
+
+      if (res.statusCode !== 200) {
+        reject(new Error(`download failed: ${res.statusCode}`));
+        return;
+      }
+      pipe(res, write).then(resolve).catch(reject);
+    });
+    req.on("error", reject);
   });
 }
 
