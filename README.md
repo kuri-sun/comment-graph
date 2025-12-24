@@ -3,7 +3,7 @@
 A small CLI that scans your codebase for comment metadata and builds a dependency graph.
 
 [![Release](https://img.shields.io/github/v/release/kuri-sun/comment-graph)](https://github.com/kuri-sun/comment-graph/releases)
-[![npm](https://img.shields.io/npm/v/comment-graph)](https://www.npmjs.com/package/comment-graph)
+[![npm](https://img.shields.io/npm/v/@comment-graph/comment-graph)](https://www.npmjs.com/package/@comment-graph/comment-graph)
 [![CI](https://github.com/kuri-sun/comment-graph/actions/workflows/ci.yml/badge.svg)](https://github.com/kuri-sun/comment-graph/actions/workflows/ci.yml)
 
 ## Installation
