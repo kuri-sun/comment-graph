@@ -1,14 +1,37 @@
 #!/usr/bin/env node
 const { spawnSync } = require("node:child_process");
-const { existsSync } = require("node:fs");
+const { existsSync, readFileSync } = require("node:fs");
 const path = require("node:path");
 
-const binPath = path.join(__dirname, "comment-graph" + (process.platform === "win32" ? ".exe" : ""));
-
-if (!existsSync(binPath)) {
-  console.error(`comment-graph binary missing at ${binPath}`);
-  process.exit(1);
+function resolvePlatformPackage() {
+  const platform = process.platform;
+  const arch = process.arch;
+  let pkg;
+  if (platform === "linux" && arch === "x64") pkg = "comment-graph-linux-64";
+  else if (platform === "darwin" && arch === "arm64") pkg = "comment-graph-darwin-arm64";
+  else if (platform === "win32" && arch === "x64") pkg = "comment-graph-win32-64";
+  else {
+    console.error(`comment-graph: unsupported platform/arch ${platform}/${arch}`);
+    process.exit(1);
+  }
+  let pkgJsonPath;
+  try {
+    pkgJsonPath = require.resolve(`${pkg}/package.json`);
+  } catch (err) {
+    console.error(`comment-graph: platform package ${pkg} not installed`);
+    process.exit(1);
+  }
+  const pkgRoot = path.dirname(pkgJsonPath);
+  const pkgJson = JSON.parse(readFileSync(pkgJsonPath, "utf8"));
+  const binRel = (pkgJson.bin && pkgJson.bin["comment-graph"]) || "bin/comment-graph";
+  const binPath = path.join(pkgRoot, binRel);
+  if (!existsSync(binPath)) {
+    console.error(`comment-graph: binary not found at ${binPath}`);
+    process.exit(1);
+  }
+  return binPath;
 }
 
+const binPath = resolvePlatformPackage();
 const result = spawnSync(binPath, process.argv.slice(2), { stdio: "inherit" });
 process.exit(result.status ?? 1);

@@ -1,5 +1,7 @@
 bin
 !npm/bin
+!npm/**/bin/
+!npm/**/bin/**
 npm/wasm
 
 .gocache

@@ -1,17 +1,22 @@
 {
   "name": "comment-graph",
   "version": "0.1.1",
-  "description": "CLI wrapper for comment-graph bundling a native binary",
+  "description": "CLI wrapper for comment-graph; delegates to platform-specific binaries",
   "bin": {
     "comment-graph": "./bin/comment-graph.js"
   },
   "scripts": {
-    "build": "GOOS=linux GOARCH=amd64 go build -C .. -o npm/bin/comment-graph ./cmd/comment-graph",
+    "build": "echo \"No build step; platform binaries provided by optional deps\"",
     "prepack": "npm run build"
   },
   "files": [
     "bin"
   ],
+  "optionalDependencies": {
+    "comment-graph-linux-64": "0.1.1",
+    "comment-graph-darwin-arm64": "0.1.1",
+    "comment-graph-win32-64": "0.1.1"
+  },
   "license": "MIT",
   "repository": {
     "type": "git",
