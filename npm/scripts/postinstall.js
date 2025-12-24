@@ -1,10 +1,15 @@
 #!/usr/bin/env node
 const { spawnSync } = require("node:child_process");
-const { createWriteStream, chmodSync, existsSync, mkdirSync, renameSync } = require("node:fs");
+const {
+  createWriteStream,
+  chmodSync,
+  existsSync,
+  mkdirSync,
+  renameSync,
+} = require("node:fs");
 const { pipeline } = require("node:stream");
 const { promisify } = require("node:util");
 const https = require("node:https");
-const os = require("node:os");
 const path = require("node:path");
 
 const pkg = require("../package.json");
@@ -26,14 +31,17 @@ async function main() {
   const url = `${host}/${repo}/releases/download/v${version}/${archiveName}`;
 
   const archivePath = path.join(destDir, archiveName);
-  console.log(`Downloading comment-graph ${version} (${platform}/${arch}) from ${url}`);
+  console.log(
+    `Downloading comment-graph ${version} (${platform}/${arch}) from ${url}`,
+  );
   await download(url, archivePath);
 
   const extractDir = path.join(destDir, "tmp-extract");
   mkdirSync(extractDir, { recursive: true });
   extract(archivePath, extractDir, ext);
 
-  const binaryName = platform === "windows" ? "comment-graph.exe" : "comment-graph";
+  const binaryName =
+    platform === "windows" ? "comment-graph.exe" : "comment-graph";
   const extractedPath = path.join(extractDir, binaryName);
   if (!existsSync(extractedPath)) {
     console.error("Failed to locate extracted binary at", extractedPath);
@@ -89,9 +97,16 @@ async function download(url, dest) {
 
 function extract(archive, dest, ext) {
   if (ext === "zip") {
-    const unzip = spawnSync("powershell", ["-Command", `Expand-Archive -Path "${archive}" -DestinationPath "${dest}" -Force`], {
-      stdio: "inherit",
-    });
+    const unzip = spawnSync(
+      "powershell",
+      [
+        "-Command",
+        `Expand-Archive -Path "${archive}" -DestinationPath "${dest}" -Force`,
+      ],
+      {
+        stdio: "inherit",
+      },
+    );
     if (unzip.status !== 0) {
       console.error("Failed to unzip archive");
       process.exit(1);
@@ -99,7 +114,9 @@ function extract(archive, dest, ext) {
     return;
   }
 
-  const tar = spawnSync("tar", ["-xzf", archive, "-C", dest], { stdio: "inherit" });
+  const tar = spawnSync("tar", ["-xzf", archive, "-C", dest], {
+    stdio: "inherit",
+  });
   if (tar.status !== 0) {
     console.error("Failed to untar archive (tar command required)");
     process.exit(1);
