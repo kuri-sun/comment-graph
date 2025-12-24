@@ -1,4 +1,4 @@
-# comment-graph
+# comment-graph (wip)
 
 [![Release](https://img.shields.io/github/v/release/kuri-sun/comment-graph)](https://github.com/kuri-sun/comment-graph/releases)
 [![npm](https://img.shields.io/npm/v/comment-graph)](https://www.npmjs.com/package/comment-graph)
