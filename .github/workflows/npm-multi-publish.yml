@@ -43,6 +43,7 @@ jobs:
 
       - name: Build platform binaries
         run: |
+          mkdir -p npm/comment-graph-linux-64/bin npm/comment-graph-darwin-arm64/bin npm/comment-graph-win32-64/bin
           GOOS=linux GOARCH=amd64 go build -o npm/comment-graph-linux-64/bin/comment-graph ./cmd/comment-graph
           GOOS=darwin GOARCH=arm64 go build -o npm/comment-graph-darwin-arm64/bin/comment-graph ./cmd/comment-graph
           GOOS=windows GOARCH=amd64 go build -o npm/comment-graph-win32-64/bin/comment-graph.exe ./cmd/comment-graph
