@@ -1,6 +1,6 @@
 {
-  "name": "comment-graph-linux-64",
-  "version": "0.1.4",
+  "name": "@comment-graph/comment-graph-linux-64",
+  "version": "0.1.5",
   "description": "comment-graph binary for linux x64",
   "bin": {
     "comment-graph": "bin/comment-graph"

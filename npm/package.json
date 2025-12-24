@@ -1,6 +1,6 @@
 {
-  "name": "comment-graph",
-  "version": "0.1.4",
+  "name": "@comment-graph/comment-graph",
+  "version": "0.1.5",
   "description": "CLI wrapper for comment-graph; delegates to platform-specific binaries",
   "bin": {
     "comment-graph": "./bin/comment-graph.js"
@@ -13,9 +13,9 @@
     "bin"
   ],
   "optionalDependencies": {
-    "comment-graph-linux-64": "0.1.4",
-    "comment-graph-darwin-arm64": "0.1.4",
-    "comment-graph-win32-64": "0.1.4"
+    "@comment-graph/comment-graph-linux-64": "0.1.5",
+    "@comment-graph/comment-graph-darwin-arm64": "0.1.5",
+    "@comment-graph/comment-graph-win32-64": "0.1.5"
   },
   "license": "MIT",
   "repository": {
