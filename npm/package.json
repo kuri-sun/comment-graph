@@ -1,16 +1,13 @@
 {
   "name": "comment-graph",
   "version": "0.1.1",
-  "description": "CLI wrapper for comment-graph with binary downloader",
+  "description": "CLI wrapper for comment-graph using bundled WebAssembly",
   "bin": {
     "comment-graph": "./bin/comment-graph.js"
   },
-  "scripts": {
-    "postinstall": "node ./scripts/postinstall.js"
-  },
   "files": [
     "bin",
-    "scripts"
+    "wasm"
   ],
   "license": "MIT",
   "repository": {

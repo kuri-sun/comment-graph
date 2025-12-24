@@ -1,17 +1,37 @@
 #!/usr/bin/env node
-const { spawnSync } = require("node:child_process");
-const { existsSync } = require("node:fs");
+const fs = require("node:fs");
 const path = require("node:path");
 
-const binDir = __dirname;
-const exe = process.platform === "win32" ? "comment-graph.exe" : "comment-graph";
-const binPath = path.join(binDir, exe);
+const wasmDir = path.join(__dirname, "..", "wasm");
+const wasmPath = path.join(wasmDir, "comment-graph.wasm");
+const wasmExecPath = path.join(wasmDir, "wasm_exec.js");
 
-if (!existsSync(binPath)) {
-  console.error(`comment-graph binary not found at ${binPath}. Did postinstall succeed?`);
+if (!fs.existsSync(wasmPath)) {
+  console.error(`comment-graph wasm missing at ${wasmPath}`);
+  process.exit(1);
+}
+if (!fs.existsSync(wasmExecPath)) {
+  console.error(`wasm_exec.js missing at ${wasmExecPath}`);
   process.exit(1);
 }
 
-const args = process.argv.slice(2);
-const result = spawnSync(binPath, args, { stdio: "inherit" });
-process.exit(result.status ?? 1);
+// Go runtime shim from the Go toolchain; defines global Go.
+require(wasmExecPath);
+
+async function main() {
+  const go = new Go();
+  go.argv = ["comment-graph", ...process.argv.slice(2)];
+  go.env = process.env;
+  go.exit = (code) => {
+    process.exit(code);
+  };
+
+  const bytes = fs.readFileSync(wasmPath);
+  const { instance } = await WebAssembly.instantiate(bytes, go.importObject);
+  await go.run(instance);
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});
