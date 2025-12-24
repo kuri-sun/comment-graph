@@ -6,7 +6,8 @@
     "comment-graph": "./bin/comment-graph.js"
   },
   "scripts": {
-    "build": "GOCACHE=$PWD/.gocache GOMODCACHE=$PWD/.gomodcache GOOS=js GOARCH=wasm go build -o npm/wasm/comment-graph.wasm ./cmd/comment-graph && cp $(go env GOROOT)/lib/wasm/wasm_exec.js npm/wasm/"
+    "build": "GOCACHE=$PWD/.gocache GOMODCACHE=$PWD/.gomodcache GOOS=js GOARCH=wasm go build -o npm/wasm/comment-graph.wasm ./cmd/comment-graph && cp $(go env GOROOT)/lib/wasm/wasm_exec.js npm/wasm/",
+    "prepack": "npm run build"
   },
   "files": [
     "bin",
