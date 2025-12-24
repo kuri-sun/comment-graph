@@ -1,6 +1,6 @@
 {
   "name": "comment-graph-darwin-arm64",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "comment-graph binary for macOS arm64",
   "bin": {
     "comment-graph": "bin/comment-graph"
