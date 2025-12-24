@@ -1,16 +1,15 @@
 # comment-graph (wip)
 
+A small CLI that scans your codebase for comment metadata and builds a dependency graph.
+
 [![Release](https://img.shields.io/github/v/release/kuri-sun/comment-graph)](https://github.com/kuri-sun/comment-graph/releases)
 [![npm](https://img.shields.io/npm/v/comment-graph)](https://www.npmjs.com/package/comment-graph)
 [![CI](https://github.com/kuri-sun/comment-graph/actions/workflows/ci.yml/badge.svg)](https://github.com/kuri-sun/comment-graph/actions/workflows/ci.yml)
 
-A small CLI that scans your codebase for comment metadata and builds a dependency graph.
-
 ## Installation
 
-- Binary download: Download the appropriate archive from the GitHub releases page, unpack, and put comment-graph on your PATH. `curl -L https://github.com/kuri-sun/comment-graph/releases/download/v0.1.0/comment-graph_0.1.0_linux_amd64.tar.gz | tar -xz` and `sudo mv comment-graph /usr/local/bin/`.
 - Go: `go install github.com/kuri-sun/comment-graph/cmd/comment-graph@latest`.
-- Node: `npm install --save-dev comment-graph` or `npx comment-graph`.
+- Node: `npm install --save-dev @comment-graph/comment-graph` or `npx @comment-graph/comment-graph`.
 
 ## Usage
 
@@ -58,4 +57,4 @@ edges:
 
 ## Integration
 
-Nvim plugin: [comment-graph.nvim](../comment-graph.nvim) lets you browse graphs via a tree/preview UI.
+Nvim plugin: [comment-graph.nvim](../comment-graph.nvim)
