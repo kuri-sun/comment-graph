@@ -1,17 +1,16 @@
 {
   "name": "comment-graph",
   "version": "0.1.1",
-  "description": "CLI wrapper for comment-graph using bundled WebAssembly",
+  "description": "CLI wrapper for comment-graph bundling a native binary",
   "bin": {
     "comment-graph": "./bin/comment-graph.js"
   },
   "scripts": {
-    "build": "GOOS=js GOARCH=wasm go build -C .. -o npm/wasm/comment-graph.wasm ./cmd/comment-graph && cp $(go env GOROOT)/lib/wasm/wasm_exec.js ../npm/wasm/",
+    "build": "GOOS=linux GOARCH=amd64 go build -C .. -o npm/bin/comment-graph ./cmd/comment-graph",
     "prepack": "npm run build"
   },
   "files": [
-    "bin",
-    "wasm"
+    "bin"
   ],
   "license": "MIT",
   "repository": {
