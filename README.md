@@ -8,7 +8,7 @@ A small CLI that scans your codebase for comment metadata and builds a dependenc
 
 ## Installation
 
-- Binary download: Download the appropriate archive from the GitHub releases page, unpack, and put comment-graph on your PATH.
+- Binary download: Download the appropriate archive from the GitHub releases page, unpack, and put comment-graph on your PATH. `curl -L https://github.com/kuri-sun/comment-graph/releases/download/v0.1.0/comment-graph_0.1.0_linux_amd64.tar.gz | tar -xz` and `sudo mv comment-graph /usr/local/bin/`.
 - Go: `go install github.com/kuri-sun/comment-graph/cmd/comment-graph@latest`.
 - Node: `npm install --save-dev comment-graph` or `npx comment-graph`.
 
