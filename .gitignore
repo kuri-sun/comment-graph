@@ -2,6 +2,9 @@ bin
 !npm/bin
 !npm/**/bin/
 !npm/**/bin/**
+npm/**/bin/comment-graph*
+npm/**/bin/comment-graph.exe
+!npm/**/bin/.gitkeep
 npm/wasm
 
 .gocache
