@@ -1,6 +1,6 @@
 {
   "name": "comment-graph-darwin-arm64",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "comment-graph binary for macOS arm64",
   "bin": {
     "comment-graph": "bin/comment-graph"
@@ -8,8 +8,12 @@
   "files": [
     "bin"
   ],
-  "os": ["darwin"],
-  "cpu": ["arm64"],
+  "os": [
+    "darwin"
+  ],
+  "cpu": [
+    "arm64"
+  ],
   "license": "MIT",
   "repository": {
     "type": "git",
