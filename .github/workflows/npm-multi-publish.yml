@@ -1,0 +1,72 @@
+name: npm publish (platform binaries)
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Use Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "20"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Use Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25.x"
+
+      - name: Verify tag matches package versions
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          META_VERSION=$(node -p "require('./npm/package.json').version")
+          LINUX_VERSION=$(node -p "require('./npm/comment-graph-linux-64/package.json').version")
+          DARWIN_VERSION=$(node -p "require('./npm/comment-graph-darwin-arm64/package.json').version")
+          WIN_VERSION=$(node -p "require('./npm/comment-graph-win32-64/package.json').version")
+          if [ "$TAG" != "$META_VERSION" ] || [ "$TAG" != "$LINUX_VERSION" ] || [ "$TAG" != "$DARWIN_VERSION" ] || [ "$TAG" != "$WIN_VERSION" ]; then
+            echo "Tag v$TAG does not match package versions ($META_VERSION/$LINUX_VERSION/$DARWIN_VERSION/$WIN_VERSION)"
+            exit 1
+          fi
+
+      - name: Build platform binaries
+        run: |
+          GOOS=linux GOARCH=amd64 go build -o npm/comment-graph-linux-64/bin/comment-graph ./cmd/comment-graph
+          GOOS=darwin GOARCH=arm64 go build -o npm/comment-graph-darwin-arm64/bin/comment-graph ./cmd/comment-graph
+          GOOS=windows GOARCH=amd64 go build -o npm/comment-graph-win32-64/bin/comment-graph.exe ./cmd/comment-graph
+
+      - name: Publish linux x64
+        working-directory: npm/comment-graph-linux-64
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access public
+
+      - name: Publish macOS arm64
+        working-directory: npm/comment-graph-darwin-arm64
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access public
+
+      - name: Publish Windows x64
+        working-directory: npm/comment-graph-win32-64
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access public
+
+      - name: Publish meta package
+        working-directory: npm
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access public
