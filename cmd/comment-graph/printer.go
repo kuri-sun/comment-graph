@@ -8,8 +8,6 @@ import (
 )
 
 type printer struct {
-	useColor bool
-
 	warn   *color.Color
 	err    *color.Color
 	ok     *color.Color
@@ -17,14 +15,12 @@ type printer struct {
 }
 
 func newPrinter() printer {
-	useColor := shouldUseColor()
-	color.NoColor = !useColor
+	color.NoColor = !shouldUseColor()
 	return printer{
-		useColor: useColor,
-		warn:     color.New(color.FgYellow, color.Bold),
-		err:      color.New(color.FgRed, color.Bold),
-		ok:       color.New(color.FgGreen, color.Bold),
-		header:   color.New(color.Bold),
+		warn:   color.New(color.FgYellow, color.Bold),
+		err:    color.New(color.FgRed, color.Bold),
+		ok:     color.New(color.FgGreen, color.Bold),
+		header: color.New(color.Bold),
 	}
 }
 
@@ -37,10 +33,6 @@ func shouldUseColor() bool {
 
 func (p printer) infof(format string, args ...any) {
 	fmt.Printf("  "+format+"\n", args...)
-}
-
-func (p printer) infoLine(msg string) {
-	fmt.Println("  " + msg)
 }
 
 func (p printer) warnLine(msg string) {
@@ -57,14 +49,6 @@ func (p printer) okLine(msg string) {
 
 func (p printer) section(msg string) {
 	fmt.Println(p.header.Sprint("> " + msg))
-}
-
-func (p printer) sectionErr(msg string) {
-	fmt.Fprintln(os.Stderr, p.header.Sprint("> "+msg))
-}
-
-func (p printer) sectionErrRed(msg string) {
-	fmt.Fprintln(os.Stderr, p.err.Sprint("> "+msg))
 }
 
 func (p printer) resultLine(ok bool) {

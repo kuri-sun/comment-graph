@@ -1,6 +1,6 @@
 # comment-graph
 
-A lightweight CLI that scans your codebase for comment metadata and builds a dependency graph.
+A lightweight CLI that reads your code comments and turns them into a dependency graph, making your codebase traceable at a glance.
 
 [![Release](https://img.shields.io/github/v/release/kuri-sun/comment-graph)](https://github.com/kuri-sun/comment-graph/releases)
 [![npm](https://img.shields.io/npm/v/@comment-graph/comment-graph)](https://www.npmjs.com/package/@comment-graph/comment-graph)
