@@ -161,6 +161,121 @@ func TestBlockComments(t *testing.T) {
 	}
 }
 
+func TestSupportedCommentStyles(t *testing.T) {
+	dir := t.TempDir()
+
+	cases := []struct {
+		name      string
+		filename  string
+		content   string
+		wantNodes []string
+		wantEdges []string
+	}{
+		{
+			name:     "hash comments (py/sh)",
+			filename: "main.py",
+			content: `# @cgraph-id a
+# @cgraph-deps b
+# @cgraph-id b
+`,
+			wantNodes: []string{"a", "b"},
+			wantEdges: []string{"b->a"},
+		},
+		{
+			name:     "sql dash dash",
+			filename: "query.sql",
+			content: `-- @cgraph-id a
+-- @cgraph-deps b
+-- @cgraph-id b
+`,
+			wantNodes: []string{"a", "b"},
+			wantEdges: []string{"b->a"},
+		},
+		{
+			name:     "html comments",
+			filename: "index.html",
+			content: `<!--
+@cgraph-id a
+@cgraph-deps b
+-->
+<!-- @cgraph-id b -->
+`,
+			wantNodes: []string{"a", "b"},
+			wantEdges: []string{"b->a"},
+		},
+		{
+			name:     "python triple quotes",
+			filename: "doc.py",
+			content: `"""
+@cgraph-id a
+@cgraph-deps b
+"""
+"""
+@cgraph-id b
+"""
+`,
+			wantNodes: []string{"a", "b"},
+			wantEdges: []string{"b->a"},
+		},
+		{
+			name:     "jsx style block",
+			filename: "component.jsx",
+			content: `{/*
+@cgraph-id a
+@cgraph-deps b
+*/}
+{/* @cgraph-id b */}
+`,
+			wantNodes: []string{"a", "b"},
+			wantEdges: []string{"b->a"},
+		},
+		{
+			name:     "inline trailing comment ignored",
+			filename: "inline.go",
+			content: `package main
+
+func main() { fmt.Println("hi") } // @cgraph-id a
+`,
+			wantNodes: []string{},
+			wantEdges: []string{},
+		},
+	}
+
+	for _, tt := range cases {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			writeFile(t, dir, tt.filename, tt.content)
+			g, errs, err := Scan(dir)
+			if err != nil {
+				t.Fatalf("scan error: %v", err)
+			}
+			if len(errs) != 0 {
+				t.Fatalf("unexpected scan errors: %+v", errs)
+			}
+			if len(g.Nodes) != len(tt.wantNodes) {
+				t.Fatalf("expected %d nodes, got %d", len(tt.wantNodes), len(g.Nodes))
+			}
+			for _, id := range tt.wantNodes {
+				if _, ok := g.Nodes[id]; !ok {
+					t.Fatalf("missing node %s", id)
+				}
+			}
+			if len(g.Edges) != len(tt.wantEdges) {
+				t.Fatalf("expected %d edges, got %d", len(tt.wantEdges), len(g.Edges))
+			}
+			edgeSet := make(map[string]bool)
+			for _, e := range g.Edges {
+				edgeSet[e.From+"->"+e.To] = true
+			}
+			for _, e := range tt.wantEdges {
+				if !edgeSet[e] {
+					t.Fatalf("missing edge %s", e)
+				}
+			}
+		})
+	}
+}
+
 func writeFile(t *testing.T, dir, name, content string) {
 	t.Helper()
 	path := filepath.Join(dir, name)
