@@ -55,6 +55,19 @@ edges:
     type: "blocks"
 ```
 
+## Supported comment styles
+
+The scanner understands whole-line or block comments that start with one of:
+
+- `//` — C/C++/C#/Java/Go/JS/TS/Swift
+- `#` — Python, Shell, Ruby, YAML
+- `--` — SQL, Lua
+- `/* ... */` and `{/* ... */}` — C-family block comments (JSX/TSX friendly)
+- `<!-- ... -->` — HTML/Markdown
+- `""" ... """` / `''' ... '''` — Python-style docstrings
+
+Inline trailing comments (`code(); // @cgraph-id ...`) are not picked up; place metadata on comment lines.
+
 ## Integration
 
 Nvim plugin: [comment-graph.nvim](../comment-graph.nvim)
