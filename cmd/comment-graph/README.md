@@ -21,6 +21,10 @@
 // @cgraph-deps dep-a, dep-b
 ```
 
+- `@cgraph-id` — required unique ID for the node (lowercase letters, digits, hyphens, underscores).
+- `@cgraph-label` — optional human-friendly label shown in outputs/preview.
+- `@cgraph-deps` — comma-separated list of IDs that block this item.
+
 ## Quick start
 
 ```ts
