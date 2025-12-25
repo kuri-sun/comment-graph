@@ -162,8 +162,6 @@ func TestBlockComments(t *testing.T) {
 }
 
 func TestSupportedCommentStyles(t *testing.T) {
-	dir := t.TempDir()
-
 	cases := []struct {
 		name      string
 		filename  string
@@ -244,7 +242,9 @@ func main() { fmt.Println("hi") } // @cgraph-id a
 	for _, tt := range cases {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			dir := t.TempDir()
 			writeFile(t, dir, tt.filename, tt.content)
+
 			g, errs, err := Scan(dir)
 			if err != nil {
 				t.Fatalf("scan error: %v", err)
