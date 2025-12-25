@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -170,6 +171,49 @@ func TestCLIGenerateSupportsOutputFlag(t *testing.T) {
 	got := readFile(t, filepath.Join(tmp, "comment-graph.yml"))
 	if !strings.Contains(got, "\n  cache-sample:\n") || !strings.Contains(got, "\n  db-sample:\n") {
 		t.Fatalf("unexpected todos section:\n%s", got)
+	}
+}
+
+// Integration: generate should pick up supported comment styles and ignore inline trailing comments.
+func TestCLIGenerateCommentStyles(t *testing.T) {
+	tmp := t.TempDir()
+	files := []string{
+		filepath.Join("comment-styles", "py_doc.py"),
+		filepath.Join("comment-styles", "sql.sql"),
+		filepath.Join("comment-styles", "html.html"),
+		filepath.Join("comment-styles", "block.js"),
+		filepath.Join("comment-styles", "hash.sh"),
+		filepath.Join("comment-styles", "inline.go"),
+	}
+	for _, f := range files {
+		copyFixtureFile(t, f, tmp)
+	}
+
+	bin := buildCLI(t)
+	runCmd(t, bin, tmp, "generate")
+
+	got := readFile(t, filepath.Join(tmp, "comment-graph.yml"))
+	wantNodes := []string{"hash-root", "block-root", "html-root", "sql-root", "py-root"}
+	for _, n := range wantNodes {
+		if !strings.Contains(got, "\n  "+n+":\n") {
+			t.Fatalf("missing node %s in output:\n%s", n, got)
+		}
+	}
+	if strings.Contains(got, "inline-ignored") {
+		t.Fatalf("inline trailing comment was unexpectedly parsed:\n%s", got)
+	}
+
+	wantEdges := []struct{ from, to string }{
+		{"hash-root", "block-root"},
+		{"block-root", "html-root"},
+		{"html-root", "sql-root"},
+		{"sql-root", "py-root"},
+	}
+	for _, e := range wantEdges {
+		pat := fmt.Sprintf("from: %q\n    to: %q", e.from, e.to)
+		if !strings.Contains(got, pat) {
+			t.Fatalf("missing edge %s->%s in output:\n%s", e.from, e.to, got)
+		}
 	}
 }
 
