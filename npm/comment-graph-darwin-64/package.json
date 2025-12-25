@@ -1,0 +1,22 @@
+{
+  "name": "@comment-graph/comment-graph-darwin-64",
+  "version": "0.1.5",
+  "description": "comment-graph binary for macOS x64",
+  "bin": {
+    "comment-graph": "bin/comment-graph"
+  },
+  "files": [
+    "bin"
+  ],
+  "os": [
+    "darwin"
+  ],
+  "cpu": [
+    "x64"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kuri-sun/comment-graph.git"
+  }
+}
