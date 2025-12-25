@@ -14,6 +14,7 @@
   ],
   "optionalDependencies": {
     "@comment-graph/comment-graph-linux-64": "0.1.5",
+    "@comment-graph/comment-graph-linux-arm64": "0.1.5",
     "@comment-graph/comment-graph-darwin-64": "0.1.5",
     "@comment-graph/comment-graph-darwin-arm64": "0.1.5",
     "@comment-graph/comment-graph-win32-64": "0.1.5"

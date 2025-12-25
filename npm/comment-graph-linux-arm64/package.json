@@ -1,0 +1,22 @@
+{
+  "name": "@comment-graph/comment-graph-linux-arm64",
+  "version": "0.1.5",
+  "description": "comment-graph binary for linux arm64",
+  "bin": {
+    "comment-graph": "bin/comment-graph"
+  },
+  "files": [
+    "bin"
+  ],
+  "os": [
+    "linux"
+  ],
+  "cpu": [
+    "arm64"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kuri-sun/comment-graph.git"
+  }
+}

@@ -13,6 +13,7 @@ if (!newVersion) {
 const pkgPaths = [
   "npm/package.json",
   "npm/comment-graph-linux-64/package.json",
+  "npm/comment-graph-linux-arm64/package.json",
   "npm/comment-graph-darwin-64/package.json",
   "npm/comment-graph-darwin-arm64/package.json",
   "npm/comment-graph-win32-64/package.json",

@@ -8,6 +8,7 @@ function resolvePlatformPackage() {
   const arch = process.arch;
   let pkg;
   if (platform === "linux" && arch === "x64") pkg = "@comment-graph/comment-graph-linux-64";
+  else if (platform === "linux" && arch === "arm64") pkg = "@comment-graph/comment-graph-linux-arm64";
   else if (platform === "darwin" && arch === "x64") pkg = "@comment-graph/comment-graph-darwin-64";
   else if (platform === "darwin" && arch === "arm64") pkg = "@comment-graph/comment-graph-darwin-arm64";
   else if (platform === "win32" && arch === "x64") pkg = "@comment-graph/comment-graph-win32-64";
