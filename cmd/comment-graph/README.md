@@ -2,23 +2,24 @@
 
 ## Usage
 
-- `comment-graph check` — validate references, detect cycles/isolated nodes, and ensure `comment-graph.yml` matches source.
-- `comment-graph graph` — stream JSON (graph + validation report) to stdout without writing repo files.
-- `comment-graph generate` — scan for comment graph nodes and write `comment-graph.yml`.
+- `comment-graph check` — validate references, detect cycles/isolated nodes.
+- `comment-graph graph` — stream JSON (graph + validation report) to stdout without writing repo files (redirect to save).
 
 ### Flags and behavior
 
-- `generate --format <yaml|json>` — choose output format (json writes `comment-graph.json`).
-- `generate --allow-errors` — write output even when validation fails (errors included in JSON output).
 - `--dir <path>` — run commands against a different repository root.
 - `--help`, `-h` — show usage.
 
-### Comment graph syntax
+### Syntax
 
 ```ts
-// @cgraph-id some-id
-// @cgraph-label Optional human label
-// @cgraph-deps dep-a, dep-b
+// user.ts
+// @cgraph-id db-migration
+
+// cache.ts
+// @cgraph-id cache-user
+// @cgraph-label Cache user reads
+// @cgraph-deps db-migration
 ```
 
 - `@cgraph-id` — required unique ID for the node (lowercase letters, digits, hyphens, underscores).
@@ -33,8 +34,6 @@
 - `@cgraph-deps` is comma-separated; spaces are allowed after commas.
 
 ## Supported comment styles
-
-The scanner understands whole-line or block comments that start with one of:
 
 - `//` — C/C++/C#/Java/Go/JS/TS/Swift
 - `#` — Python, Shell, Ruby, YAML

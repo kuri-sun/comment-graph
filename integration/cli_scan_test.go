@@ -1,7 +1,7 @@
 package integration
 
 import (
-	"fmt"
+	"encoding/json"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -9,34 +9,125 @@ import (
 	"testing"
 )
 
-// Integration: run `comment-graph generate` end-to-end against a temp TS repo with cross-file deps.
-func TestCLIGenerateWritesTodoGraph(t *testing.T) {
+type graphPayload struct {
+	Graph struct {
+		Version int `json:"version"`
+		Nodes   map[string]struct {
+			File string `json:"file"`
+			Line int    `json:"line"`
+		} `json:"nodes"`
+		Edges []struct {
+			From string `json:"from"`
+			To   string `json:"to"`
+			Type string `json:"type"`
+		} `json:"edges"`
+	} `json:"graph"`
+	Report struct {
+		ScanErrors     []struct{ Msg string }      `json:"scanErrors"`
+		UndefinedEdges []struct{ From, To string } `json:"undefinedEdges"`
+		Cycles         [][]string                  `json:"cycles"`
+		Isolated       []string                    `json:"isolated"`
+	} `json:"report"`
+}
+
+func TestCLIGraphStreamsJSON(t *testing.T) {
 	tmp := t.TempDir()
 	copyFixtureFile(t, filepath.Join("sample", "index.ts"), tmp)
 	copyFixtureFile(t, filepath.Join("sample", "users.ts"), tmp)
 
 	bin := buildCLI(t)
-	runCmd(t, bin, tmp, "generate")
+	_, out := runCmdExpectExit(t, bin, tmp, 0, "graph")
 
-	got := readFile(t, filepath.Join(tmp, "comment-graph.yml"))
-	if !strings.Contains(got, "\n  cache-sample:\n") || !strings.Contains(got, "\n  db-sample:\n") || !strings.Contains(got, "\n  cleanup-sample:\n") {
-		t.Fatalf("unexpected todos section:\n%s", got)
+	payload := decodeGraph(t, out)
+	if payload.Graph.Version != 1 {
+		t.Fatalf("expected graph version 1, got %d", payload.Graph.Version)
 	}
-	if !strings.Contains(got, "from: \"db-sample\"\n    to: \"cache-sample\"") {
-		t.Fatalf("expected edge db-sample->cache-sample, got:\n%s", got)
+	for _, id := range []string{"cache-sample", "db-sample", "cleanup-sample"} {
+		if _, ok := payload.Graph.Nodes[id]; !ok {
+			t.Fatalf("expected node %s in graph output", id)
+		}
 	}
-	if !strings.Contains(got, "from: \"cache-sample\"\n    to: \"cleanup-sample\"") {
-		t.Fatalf("expected edge cache-sample->cleanup-sample, got:\n%s", got)
+	if !hasEdge(payload.Graph.Edges, "db-sample", "cache-sample") || !hasEdge(payload.Graph.Edges, "cache-sample", "cleanup-sample") {
+		t.Fatalf("missing expected edges: %+v", payload.Graph.Edges)
 	}
 }
 
-// Integration: `check` should fail with exit 1 on undefined references.
+func TestCLIGraphSupportsDirFlag(t *testing.T) {
+	tmp := t.TempDir()
+	copyFixtureFile(t, filepath.Join("sample", "index.ts"), tmp)
+	copyFixtureFile(t, filepath.Join("sample", "users.ts"), tmp)
+
+	bin := buildCLI(t)
+	otherDir := t.TempDir()
+
+	_, out := runCmdExpectExit(t, bin, otherDir, 0, "graph", "--dir", tmp)
+	payload := decodeGraph(t, out)
+	if len(payload.Graph.Nodes) == 0 {
+		t.Fatalf("expected nodes when using --dir")
+	}
+}
+
+func TestCLIGraphSupportsCommentStyles(t *testing.T) {
+	tmp := t.TempDir()
+	files := []string{
+		filepath.Join("comment-styles", "py_doc.py"),
+		filepath.Join("comment-styles", "sql.sql"),
+		filepath.Join("comment-styles", "html.html"),
+		filepath.Join("comment-styles", "block.js"),
+		filepath.Join("comment-styles", "hash.sh"),
+		filepath.Join("comment-styles", "inline.go"),
+	}
+	for _, f := range files {
+		copyFixtureFile(t, f, tmp)
+	}
+
+	bin := buildCLI(t)
+	_, out := runCmdExpectExit(t, bin, tmp, 0, "graph")
+
+	payload := decodeGraph(t, out)
+	wantNodes := []string{"hash-root", "block-root", "html-root", "sql-root", "py-root"}
+	for _, n := range wantNodes {
+		if _, ok := payload.Graph.Nodes[n]; !ok {
+			t.Fatalf("missing node %s in graph output", n)
+		}
+	}
+	if _, ok := payload.Graph.Nodes["inline-ignored"]; ok {
+		t.Fatalf("inline trailing comment was unexpectedly parsed")
+	}
+	wantEdges := []struct{ from, to string }{
+		{"hash-root", "block-root"},
+		{"block-root", "html-root"},
+		{"html-root", "sql-root"},
+		{"sql-root", "py-root"},
+	}
+	for _, e := range wantEdges {
+		if !hasEdge(payload.Graph.Edges, e.from, e.to) {
+			t.Fatalf("missing edge %s->%s in output", e.from, e.to)
+		}
+	}
+}
+
+func TestCLIGraphAllowErrorsFlag(t *testing.T) {
+	tmp := t.TempDir()
+	copyFixtureFile(t, filepath.Join("undefined", "index.ts"), tmp)
+
+	bin := buildCLI(t)
+	code, out := runCmdExpectExit(t, bin, tmp, 0, "graph", "--allow-errors")
+	if code != 0 {
+		t.Fatalf("expected exit 0 with --allow-errors, got %d", code)
+	}
+	payload := decodeGraph(t, out)
+	if len(payload.Report.UndefinedEdges) == 0 {
+		t.Fatalf("expected report to include undefined edges")
+	}
+}
+
 func TestCLICheckFailsOnUndefinedReference(t *testing.T) {
 	tmp := t.TempDir()
 	copyFixtureFile(t, filepath.Join("undefined", "index.ts"), tmp)
 
 	bin := buildCLI(t)
-	code, out := runCmdExpectExit(t, bin, tmp, 1, "generate")
+	code, out := runCmdExpectExit(t, bin, tmp, 1, "check")
 	if code != 1 {
 		t.Fatalf("expected exit 1, got %d\nout:\n%s", code, out)
 	}
@@ -45,14 +136,13 @@ func TestCLICheckFailsOnUndefinedReference(t *testing.T) {
 	}
 }
 
-// Integration: `check` should fail with exit 2 on cycles.
 func TestCLICheckDetectsCycle(t *testing.T) {
 	tmp := t.TempDir()
 	copyFixtureFile(t, filepath.Join("cycle", "a.ts"), tmp)
 	copyFixtureFile(t, filepath.Join("cycle", "b.ts"), tmp)
 
 	bin := buildCLI(t)
-	code, out := runCmdExpectExit(t, bin, tmp, 2, "generate")
+	code, out := runCmdExpectExit(t, bin, tmp, 2, "check")
 	if code != 2 {
 		t.Fatalf("expected exit 2, got %d\nout:\n%s", code, out)
 	}
@@ -61,39 +151,12 @@ func TestCLICheckDetectsCycle(t *testing.T) {
 	}
 }
 
-// Integration: `check` should ignore comment-graph.yml drift and rely on source scan only.
-func TestCLICheckIgnoresDrift(t *testing.T) {
-	tmp := t.TempDir()
-	copyFixtureFile(t, filepath.Join("sample", "index.ts"), tmp)
-	copyFixtureFile(t, filepath.Join("sample", "users.ts"), tmp)
-
-	bin := buildCLI(t)
-	runCmd(t, bin, tmp, "generate")
-
-	// mutate comment-graph.yml to introduce drift
-	path := filepath.Join(tmp, "comment-graph.yml")
-	contents := readFile(t, path)
-	contents = strings.Replace(contents, "cleanup-sample", "cleanup-sample-changed", 1)
-	if err := os.WriteFile(path, []byte(contents), 0o644); err != nil {
-		t.Fatalf("mutate comment-graph.yml: %v", err)
-	}
-
-	code, out := runCmdExpectExit(t, bin, tmp, 0, "check")
-	if code != 0 {
-		t.Fatalf("expected exit 0, got %d\nout:\n%s", code, out)
-	}
-	if strings.Contains(out, "comment-graph.yml is out of date") {
-		t.Fatalf("did not expect drift output, got:\n%s", out)
-	}
-}
-
-// Integration: `check` should surface isolated TODOs via exit 3.
 func TestCLICheckDetectsIsolated(t *testing.T) {
 	tmp := t.TempDir()
 	copyFixtureFile(t, filepath.Join("isolated", "index.ts"), tmp)
 
 	bin := buildCLI(t)
-	code, out := runCmdExpectExit(t, bin, tmp, 3, "generate")
+	code, out := runCmdExpectExit(t, bin, tmp, 3, "check")
 	if code != 3 {
 		t.Fatalf("expected exit 3, got %d\nout:\n%s", code, out)
 	}
@@ -102,7 +165,6 @@ func TestCLICheckDetectsIsolated(t *testing.T) {
 	}
 }
 
-// Integration: version command/flag should print the CLI version and exit 0.
 func TestCLIVersionCommand(t *testing.T) {
 	bin := buildCLI(t)
 	dir := t.TempDir()
@@ -119,102 +181,26 @@ func TestCLIVersionCommand(t *testing.T) {
 	}
 }
 
-// Integration: check should surface scan/undefined errors even without comment-graph.yml.
-func TestCLICheckReportsScanErrorsWithoutGraph(t *testing.T) {
-	tmp := t.TempDir()
-	copyFixtureFile(t, filepath.Join("undefined", "index.ts"), tmp)
-
-	bin := buildCLI(t)
-	code, out := runCmdExpectExit(t, bin, tmp, 1, "check")
-	if code != 1 {
-		t.Fatalf("expected exit 1, got %d\nout:\n%s", code, out)
+func decodeGraph(t *testing.T, out string) graphPayload {
+	t.Helper()
+	var payload graphPayload
+	if err := json.Unmarshal([]byte(out), &payload); err != nil {
+		t.Fatalf("decode graph output: %v\nout:\n%s", err, out)
 	}
-	if !strings.Contains(out, "missing \"missing-id\"") {
-		t.Fatalf("expected missing id error, got:\n%s", out)
-	}
-	if strings.Contains(out, "failed to read comment-graph.yml") {
-		t.Fatalf("expected scan error before comment-graph.yml read, got:\n%s", out)
-	}
+	return payload
 }
 
-// Integration: --dir should run commands against a different working directory.
-func TestCLIDirFlagTargetsRoot(t *testing.T) {
-	tmp := t.TempDir()
-	copyFixtureFile(t, filepath.Join("sample", "index.ts"), tmp)
-	copyFixtureFile(t, filepath.Join("sample", "users.ts"), tmp)
-
-	bin := buildCLI(t)
-	otherDir := t.TempDir()
-
-	runCmd(t, bin, otherDir, "generate", "--dir", tmp)
-
-	got := readFile(t, filepath.Join(tmp, "comment-graph.yml"))
-	if !strings.Contains(got, "\n  cache-sample:\n") || !strings.Contains(got, "\n  db-sample:\n") || !strings.Contains(got, "\n  cleanup-sample:\n") {
-		t.Fatalf("unexpected todos section:\n%s", got)
-	}
-
-	code, out := runCmdExpectExit(t, bin, otherDir, 0, "check", "--dir", tmp)
-	if code != 0 {
-		t.Fatalf("expected exit 0, got %d\nout:\n%s", code, out)
-	}
-}
-
-// Integration: generate should support writing comment-graph.yml to a custom path.
-func TestCLIGenerateSupportsOutputFlag(t *testing.T) {
-	tmp := t.TempDir()
-	copyFixtureFile(t, filepath.Join("sample", "index.ts"), tmp)
-	copyFixtureFile(t, filepath.Join("sample", "users.ts"), tmp)
-
-	bin := buildCLI(t)
-	runCmd(t, bin, tmp, "generate")
-
-	got := readFile(t, filepath.Join(tmp, "comment-graph.yml"))
-	if !strings.Contains(got, "\n  cache-sample:\n") || !strings.Contains(got, "\n  db-sample:\n") {
-		t.Fatalf("unexpected todos section:\n%s", got)
-	}
-}
-
-// Integration: generate should pick up supported comment styles and ignore inline trailing comments.
-func TestCLIGenerateCommentStyles(t *testing.T) {
-	tmp := t.TempDir()
-	files := []string{
-		filepath.Join("comment-styles", "py_doc.py"),
-		filepath.Join("comment-styles", "sql.sql"),
-		filepath.Join("comment-styles", "html.html"),
-		filepath.Join("comment-styles", "block.js"),
-		filepath.Join("comment-styles", "hash.sh"),
-		filepath.Join("comment-styles", "inline.go"),
-	}
-	for _, f := range files {
-		copyFixtureFile(t, f, tmp)
-	}
-
-	bin := buildCLI(t)
-	runCmd(t, bin, tmp, "generate")
-
-	got := readFile(t, filepath.Join(tmp, "comment-graph.yml"))
-	wantNodes := []string{"hash-root", "block-root", "html-root", "sql-root", "py-root"}
-	for _, n := range wantNodes {
-		if !strings.Contains(got, "\n  "+n+":\n") {
-			t.Fatalf("missing node %s in output:\n%s", n, got)
+func hasEdge(edges []struct {
+	From string `json:"from"`
+	To   string `json:"to"`
+	Type string `json:"type"`
+}, from, to string) bool {
+	for _, e := range edges {
+		if e.From == from && e.To == to {
+			return true
 		}
 	}
-	if strings.Contains(got, "inline-ignored") {
-		t.Fatalf("inline trailing comment was unexpectedly parsed:\n%s", got)
-	}
-
-	wantEdges := []struct{ from, to string }{
-		{"hash-root", "block-root"},
-		{"block-root", "html-root"},
-		{"html-root", "sql-root"},
-		{"sql-root", "py-root"},
-	}
-	for _, e := range wantEdges {
-		pat := fmt.Sprintf("from: %q\n    to: %q", e.from, e.to)
-		if !strings.Contains(got, pat) {
-			t.Fatalf("missing edge %s->%s in output:\n%s", e.from, e.to, got)
-		}
-	}
+	return false
 }
 
 func readFile(t *testing.T, path string) string {
@@ -277,6 +263,9 @@ func runCmdExpectExit(t *testing.T, bin, dir string, expect int, args ...string)
 		exitCode = ee.ExitCode()
 	} else {
 		t.Fatalf("command failed: %v\nout:\n%s", err, string(out))
+	}
+	if expect != exitCode {
+		t.Fatalf("expected exit %d, got %d\nout:\n%s", expect, exitCode, string(out))
 	}
 	return exitCode, string(out)
 }
