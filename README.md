@@ -4,7 +4,7 @@ A lightweight CLI that reads your code comments and turns them into a dependency
 
 [![Release](https://img.shields.io/github/v/release/kuri-sun/comment-graph)](https://github.com/kuri-sun/comment-graph/releases)
 [![npm](https://img.shields.io/npm/v/@comment-graph/comment-graph)](https://www.npmjs.com/package/@comment-graph/comment-graph)
-[![CI](https://github.com/kuri-sun/comment-graph/actions/workflows/ci.yml/badge.svg)](https://github.com/kuri-sun/comment-graph/actions/workflows/ci.yml)
+[![ci](https://github.com/kuri-sun/comment-graph/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/kuri-sun/comment-graph/actions/workflows/ci.yml)
 
 ## Installation
 
